@@ -1,0 +1,6 @@
+name = Alumni Events
+description = Module for Alumni Events
+core = 7.x
+package = Alumni Portal
+
+project = "alumni_events"

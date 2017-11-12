@@ -1,0 +1,383 @@
+<?php
+
+//Konstanten definieren
+define('SELECT_DEFAULT', t('- auswählen -'));
+define('NO_INDICATION_DEFAULT', t('- keine Angabe -'));
+
+/**
+ * Implements hook_form_alter().
+ */
+function extended_user_profile_form_alter(&$form, &$form_state, $form_id) {
+    if ($form_id === 'user_profile_form') {
+        hide($form['picture']);
+    }
+}
+//Funktion zum Erzeugen der intern Links für Drupal
+function extended_user_profile_menu() {
+
+    //Überprüfen, ob die Tabellen in der Datenbank existieren und ggf. diese erstellen
+    $schema = extended_user_profile_dbschema();
+    if(!db_table_exists('extended_user_profile')) {
+        db_create_table('extended_user_profile', $schema['extended_user_profile']);
+    }
+
+    if(!db_table_exists('extended_user_profile_cv')) {
+        db_create_table('extended_user_profile_cv', $schema['extended_user_profile_cv']);
+    }
+
+    if(!db_table_exists('extended_user_profile_suggestions')) {
+        db_create_table('extended_user_profile_suggestions', $schema['extended_user_profile_suggestions']);
+    }
+
+    $items = array();
+
+    //Item für Ansicht des Benutzerprofiles definieren
+    $items['user/%user_uid/userprofile'] = array( //this creates a URL that will call this form at "examples/form-example"
+        'title' => t('Nutzerprofil'), //page title
+        'page callback' => 'display_userprofile', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+        'page arguments' => array(1), //put the name of the form here
+        'access callback' => 'user_is_logged_in',
+        'file' => 'display_userprofile.pages.inc',
+        'menu_name' => 'main-menu',
+    );
+
+    //Item für Editieren des Benutzerprofiles definieren
+    $items['user/%user_uid/userprofile/edit'] = array( //this creates a URL that will call this form at "examples/form-example"
+        'title' => t('Nutzerprofil bearbeiten'), //page title
+        'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+        'page arguments' => array('extended_user_profile_form', 1), //put the name of the form here
+        'access callback' => 'user_is_logged_in',
+        'file' => 'edit_userprofile.pages.inc',
+        'menu_name' => 'main-menu',
+        'type' => MENU_SUGGESTED_ITEM,
+    );
+
+    //Item für Ansicht des Lebenslaufs definieren
+    $items['user/%user_uid/usercv'] = array( //this creates a URL that will call this form at "examples/form-example"
+        'title' => t('Lebenslauf'), //page title
+        'description' => 'A form to mess around with.',
+        'page callback' => 'display_usercv', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+        'page arguments' => array(1), //put the name of the form here
+        'access callback' => 'user_is_logged_in',
+        'file' => 'display_usercv.pages.inc',
+        'menu_name' => 'main-menu',
+    );
+
+    //Item für Ansicht des PDFs des Benutzerprofiles definieren
+    $items['user/%user_uid/usercv/pdf'] = array( //this creates a URL that will call this form at "examples/form-example"
+        'title' => t('Lebenslauf exportieren'), //page title
+        'description' => 'A form to mess around with.',
+        'page callback' => 'print_usercv', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+        'page arguments' => array(1), //put the name of the form here
+        'access callback' => 'user_is_logged_in',
+        'file' => 'display_usercv.pages.inc',
+        'menu_name' => 'main-menu',
+        'type' => MENU_SUGGESTED_ITEM,
+    );
+
+    //Item für Editieren des Benutzerprofiles definieren
+    $items['user/%user_uid/usercv/edit'] = array( //this creates a URL that will call this form at "examples/form-example"
+        'title' => t('Lebenslauf bearbeiten'), //page title
+        'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+        'page arguments' => array('extended_user_profile_cv_form', 1), //put the name of the form here
+        'access callback' => 'user_is_logged_in',
+        'file' => 'edit_usercv.pages.inc',
+        'menu_name' => 'main-menu',
+        'type' => MENU_SUGGESTED_ITEM,
+    );
+
+    $items['suggestions'] = array(
+        'title' => t('Eingereichte Vorschläge'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('get_suggestions_form'),
+        'access arguments' => array('access administration pages'),
+        'file' => 'suggest_user_profile.pages.inc',
+    );
+
+    $items['suggest/school'] = array(
+        'title' => t('Schule vorschlagen'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('suggest_school_form'),
+        'access callback' => 'user_is_logged_in',
+        'file' => 'suggest_user_profile.pages.inc',
+    );
+
+    $items['suggest/interest'] = array(
+        'title' => t('Interesse vorschlagen'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('suggest_interest_form'),
+        'access callback' => 'user_is_logged_in',
+        'file' => 'suggest_user_profile.pages.inc',
+    );
+
+    $items['admin/config/alumni'] = array(
+        'title' => t('Alumni'),
+        'position' => 'left',
+        'weight' => -25,
+        'page callback' => 'system_admin_menu_block_page',
+        'access arguments' => array('access administration pages'),
+    );
+
+    $items['admin/config/alumni/setprofileids'] = array(
+        'title' => t('Systemnamen Taxonomien'),
+        'description' => t('Systemnamen der Taxonomien für Projekte, Schulen etc. im Benutzerprofil festlegen.'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('set_ids_form'),
+        'access arguments' => array('administer authentication'),
+        'file' => 'admin_settings.pages.inc',
+    );
+
+
+    $items['visitedschools/autocomplete'] = array(
+        'title' => '',
+        'description' => '',
+        'page callback' => 'visited_schools_autocomplete',
+        'access callback' => TRUE,
+        'file' => 'edit_userprofile.pages.inc',
+    );
+
+    return $items;
+
+}
+
+//Funktion wird benötigt, damit der Platzhalter %user_uid aufgelöst werden kann
+function user_uid_to_arg($arg) {
+    // Give back the current user uid when called from eg. tracker, aka.
+    // with an empty arg. Also use the current user uid when called from
+    // the menu with a % for the current account link.
+    return empty($arg) || $arg == '%' ? $GLOBALS['user']->uid : $arg;
+}
+
+//Definieren des Arrays für die Datenbanktabellen und der Spalten
+function extended_user_profile_dbschema() {
+    $schema = array();
+
+    $schema['extended_user_profile_suggestions'] = array(
+        'description' => 'The table for extended_user_profile_suggestions',
+        'fields' => array(
+            'id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'category' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+        )
+    );
+
+    $schema['extended_user_profile'] = array(
+        'description' => 'The table for extended_user_profile',
+        'fields' => array(
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'image_id' => array(
+                'type' => 'int',
+                'default' => 0,
+            ),
+            'first_name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'last_name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'jufo_projects' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'other_projects' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'visited_schools' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'city' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'zip_code' => array(
+                'type' => 'int',
+                'default' => 0,
+            ),
+            'telephone' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'other_profiles' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'check_email' => array(
+                'type' => 'int',
+                'length' => 1,
+                'default' => 0,
+            ),
+            'check_post' => array(
+                'type' => 'int',
+                'length' => 1,
+                'default' => 0,
+            ),
+            'check_telephone' => array(
+                'type' => 'int',
+                'length' => 1,
+                'default' => 0,
+            ),
+            'birthday_day' => array(
+                'type' => 'int',
+                'default' => 0,
+            ),
+            'birthday_month' => array(
+                'type' => 'varchar',
+                'default' => '',
+                'length' => 255,
+            ),
+            'birthday_year' => array(
+                'type' => 'int',
+                'default' => 0,
+            ),
+            'gender' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'hobbies' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'interests' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'received_awards' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'organisations' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+        ),
+    );
+
+    $schema['extended_user_profile_cv'] = array(
+        'description' => 'The table for extended_user_profile_cv',
+        'fields' => array(
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'image_id' => array(
+                'type' => 'int',
+                'default' => 0,
+            ),
+            'salutation' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'title' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'first_name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'last_name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'birthday_day' => array(
+                'type' => 'int',
+                'default' => 0,
+            ),
+            'birthday_month' => array(
+                'type' => 'varchar',
+                'default' => '',
+                'length' => 255,
+            ),
+            'birthday_year' => array(
+                'type' => 'int',
+                'default' => 0,
+            ),
+            'email' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'street' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'city' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'zip_code' => array(
+                'type' => 'int',
+                'default' => 0,
+            ),
+            'telephone' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+
+            'nationality' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+
+            'family' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+
+            'practical_experience' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'education' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'language_skills' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+            'special_knowledge' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+
+        )
+    );
+
+    return $schema;
+}

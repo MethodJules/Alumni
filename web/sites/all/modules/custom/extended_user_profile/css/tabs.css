@@ -1,0 +1,136 @@
+
+/* Style the tab */
+div.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* Style the buttons inside the tab */
+div.tab .tablinks {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+/* Change background color of buttons on hover */
+div.tab .tablinks:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+div.tab .tablinks.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+    //position: relative;
+}
+
+.v-separator {
+    float: left;
+    //position: absolute;
+    border-right: 1px solid #ccc;
+    height: 250px;
+}
+
+.picture-alternative {
+    margin-top: 100px;
+    text-align: center;
+
+}
+
+.profile-bold-text {
+    font-weight: bold;
+}
+
+.general-left-container {
+    float:left;
+    width: 220px;
+}
+
+.general-left-container > img{
+    margin-left: 5px;
+    margin-top: 10px;
+}
+
+.general-middle-container {
+    //border-left: 1px solid #ccc;
+    width: 350px;
+    float: left;
+    height: 100%;
+}
+
+.general-right-container {
+    //border-left: 1px solid #ccc;
+    float:left;
+    height: 100%;
+}
+
+.profile-container-general {
+    margin-left: 50px;
+}
+
+.clear-float {
+    clear: left;
+}
+
+@media screen and (max-width: 800px) {
+
+    #sep2 {
+        display: none;
+    }
+
+    .general-right-container {
+        border-top: 1px solid #ccc;
+        border-left: none;
+        clear: left;
+        float: none;
+        padding-top: 15px;
+    }
+
+}
+
+@media screen and (max-width: 640px) {
+    .v-separator{
+        display: none;
+    }
+
+    .general-left-container {
+        float: none;
+    }
+
+    .general-middle-container {
+        border-top: 1px solid #ccc;
+        float: none;
+        width: 100%;
+        padding-top: 15px;
+    }
+
+    .general-right-container {
+        border-top: 1px solid #ccc;
+        float: none;
+        padding-top: 15px;
+    }
+
+    .general-left-container .picture-alternative {
+        margin-top: 15px;
+        margin-bottom: 15px;
+        margin-left: 35px;
+    }
+
+    .general-left-container > img{
+        margin-left: 50px;
+        margin-bottom: 10px;
+    }
+
+}
