@@ -1,123 +1,34 @@
-# Composer template for Drupal projects
+# Alumni Portal
+This application was created by students of the University of Hildesheim, Germany for the module "IT-Studienseminar".
+It implements a social network for alumni on top of Drupal 7.x (currently: 7.56).  
+The features that needed to be implemented were determined by requirements engineering with a potential "customer" of the software.
 
-[![Build Status](https://travis-ci.org/drupal-composer/drupal-project.svg?branch=7.x)](https://travis-ci.org/drupal-composer/drupal-project)
+## Features
+Currently the "Alumni Portal" implements the following features:
 
-This project template should provide a kickstart for managing your site
-dependencies with [Composer](https://getcomposer.org/).
+* Todo
+* Todo
+* Todo
 
-If you want to know how to use it as replacement for
-[Drush Make](https://github.com/drush-ops/drush/blob/8.x/docs/make.md) visit
-the [Documentation on drupal.org](https://www.drupal.org/node/2471553).
+## Installation
+This drupal application uses the [drupal-composer/drupal-project](https://github.com/drupal-composer/drupal-project) as a baseline, that enables you to manage libraries, modules and themes via [Composer](https://getcomposer.org/).
+Therefore, to use this application, you need to:
 
-## Usage
+1. Fullfill all [requirements](https://www.drupal.org/docs/7/system-requirements/overview) for a drupal installation. (Or e.g. install [XAMPP](https://www.apachefriends.org/index.html) for local development.)
+2. Install [Composer](https://getcomposer.org/download/).
+3. Download or clone/fork this repository.
+4. Run `composer install` inside the folder (you should be in the directory that 'composer.json' is in) to install all dependencies and build the drupal application
+5. Point your webserver to the 'web' subfolder and make your configuration secure
+6. Proceed with the usual [drupal configuration](https://www.drupal.org/docs/7/install) from step 2 on.
 
-First you need to [install composer](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-osx).
+## Development
+If you want to add to this project, please consider the following:
 
-> Note: The instructions below refer to the [global composer installation](https://getcomposer.org/doc/00-intro.md#globally).
-You might need to replace `composer` with `php composer.phar` (or similar) 
-for your setup.
+1. Add all drupal contributed libraries, modules or themes via `composer require drupal/normalized_name`. Thanks to drupal-composer, this will place these packages at the right places for you.
+2. Add custom libraries to 'sites/all/libraries', custom modules to 'sites/all/modules/custom' and custom themes to 'sites/all/themes/custom'.
+3. Remember editing the .gitignore file if you have a real need to persist other directories with Git that are currently ignored (because they should only have files from drupal core, the composer-managed modules or user-generated content in them).
+4. Remember using the 'settings.php' file from your development environment. This file is not persisted because it contains sensitive information.
 
-After that you can create the project:
+## License
 
-```
-composer create-project drupal-composer/drupal-project:7.x-dev some-dir --stability dev --no-interaction
-```
-
-With `composer require ...` you can download new dependencies to your 
-installation.
-
-```
-cd some-dir
-composer require drupal/devel:~1.0
-```
-
-The `composer create-project` command passes ownership of all files to the 
-project that is created. You should create a new git repository, and commit 
-all files not excluded by the .gitignore file.
-
-## What does the template do?
-
-When installing the given `composer.json` some tasks are taken care of:
-
-* Drupal will be installed in the `web`-directory.
-* Modules (packages of type `drupal-module`) will be placed in `web/sites/all/modules/contrib/`
-* Theme (packages of type `drupal-module`) will be placed in `web/sites/all/themes/contrib/`
-* Profiles (packages of type `drupal-profile`) will be placed in `web/profiles/`
-* Libraries (packages of type `drupal-library`) will be placed in `web/sites/all/libraries/` (See Libraries)
-* Helps for using other PHP packages almost similar to the Drupal 8 version
-* Creates default writable versions of `settings.php`.
-* Creates `web/sites/default/files`-directory.
-* Latest version of drush is installed locally for use at `vendor/bin/drush`.
-
-## Generate composer.json from existing project
-
-With using [the "Composer Generate" drush extension](https://www.drupal.org/project/composer_generate)
-you can now generate a basic `composer.json` file from an existing project. Note
-that the generated `composer.json` might differ from this project's file.
-
-## How to enable the Composer autoloader in your Drupal 7 website
-
-The skeleton already installs the `composer_autoloader` module. Just enable it in the website before enabling
-any possible module that have dependencies various packages.
-
-## Libraries
-
-Libraries normally would be extra packages that need to be public available (CSS and JS).
-Normally this are not maintained using Composer, but if you want to have a 100% Composer deployment and benefit from patches you can use in `composer.json` this example, changing the `repositories` section and adding in `require` section:
-```
-
-"repositories": [
-  ...
-  {
-    "type": "package",
-    "package": {
-        "name": "kenwheeler/slick",
-        "version": "1.6.0",
-        "dist": {
-            "url": "https://github.com/kenwheeler/slick/archive/1.6.0.zip",
-            "type": "zip"
-        },
-        "source": {
-            "url": "https://github.com/kenwheeler/slick.git",
-            "type": "git",
-            "reference": "1.6.0"
-        },
-        "type": "drupal-library"
-    }
-  }
-],
-"require": {
-  ...
-  "kenwheeler/slick": "~1.6.0"
-},
-```
-After this run `composer update --lock` to install just the manually managed package.
-_(You may run `composer require "kenwheeler/slick:~1.6.0"` as well if you add just the package definition)_
-
-## FAQ
-
-### Should I commit the contrib modules I download?
-
-Composer recommends **no**. They provide [argumentation against but also 
-workrounds if a project decides to do it anyway](https://getcomposer.org/doc/faqs/should-i-commit-the-dependencies-in-my-vendor-directory.md).
-
-### How can I apply patches to downloaded modules?
-
-If you need to apply patches (depending on the project being modified, a pull 
-request is often a better solution), you can do so with the 
-[composer-patches](https://github.com/cweagans/composer-patches) plugin.
-
-To add a patch to drupal module foobar insert the patches section in the extra 
-section of composer.json:
-```json
-"extra": {
-    "patches": {
-        "drupal/foobar": {
-            "Patch description": "URL to patch"
-        }
-    }
-}
-```
-### How do I switch from packagist.drupal-composer.org to packages.drupal.org?
-
-Follow the instructions in the [documentation on drupal.org](https://www.drupal.org/docs/develop/using-composer/using-packagesdrupalorg).
+For now, our work is published under the GNU General Public License, Version 3. If you have convincing arguments for a license change, feel free to write an issue about it and we might follow your advice.
