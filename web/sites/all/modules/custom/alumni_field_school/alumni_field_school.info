@@ -1,0 +1,4 @@
+name = Alumni Field School
+description = Autocomplete field for schools
+core = 7.x
+package = Alumni Portal

@@ -1,0 +1,167 @@
+
+/* Tabs für das Benutzerprofil */
+div.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+div.tab .tablinks {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+div.tab .tablinks:hover {
+    background-color: #ddd;
+}
+
+div.tab .tablinks.active {
+    background-color: #ccc;
+}
+
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+    //position: relative;
+}
+
+/* Allgemeines CSS */
+
+input.form-text {
+    width: 250px;
+}
+
+textarea.form-textarea {
+    width: 400px;
+    height: 200px;
+}
+
+/* Benutzerprofil CSS */
+.v-separator {
+    float: left;
+    //position: absolute;
+    border-right: 1px solid #ccc;
+    height: 250px;
+}
+
+.picture-alternative {
+    margin-top: 100px;
+    text-align: center;
+
+}
+
+.profile-bold-text {
+    font-weight: bold;
+}
+
+.general-left-container {
+    float:left;
+    width: 220px;
+}
+
+.general-left-container > img{
+    margin-left: 5px;
+    margin-top: 10px;
+}
+
+.general-middle-container {
+    width: 350px;
+    float: left;
+    height: 100%;
+}
+
+.general-right-container {
+    float:left;
+    height: 100%;
+}
+
+.profile-container-general {
+    margin-left: 50px;
+}
+
+.left-floated-element {
+    float: left;
+    margin-right: 15px;
+}
+
+.info-box-button {
+    height: 25px;
+    width: 25px;
+    cursor: pointer;
+}
+
+.info-box {
+    background-color: #b8e0f7;
+    border: 1px solid #569df5;
+    padding: 10px;
+    display: none;
+}
+
+.clear-float {
+    clear: left;
+}
+
+
+
+/* Lebenslauf CSS */
+
+.float-btn {
+    float: left;
+}
+
+.cv-container {
+    position: relative;
+    width: 100%;
+    min-height: 500px;
+}
+
+.cv-picture-container {
+    float: right;
+    margin-right: 0;
+}
+
+.cv-page-title {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 50px;
+}
+
+.cv-headline {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.weak-bold {
+    font-weight: 700;
+}
+
+.cv-table {
+    display: table;
+    margin-bottom: 20px;
+    page-break-inside: avoid; /* wichtig, damit dompdf innerhalb der Tabelle keinen automatischen Seitenumbruch einbaut */
+}
+
+.cv-row {
+    display: table-row;
+}
+
+.cv-cell {
+    display: table-cell;
+}
+
+.cell-left {
+    width: 250px;
+}
+
+.page-user-usercv .page-title {
+    display: none;
+}
+
+

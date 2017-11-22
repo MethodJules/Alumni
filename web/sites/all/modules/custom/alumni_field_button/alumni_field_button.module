@@ -1,0 +1,177 @@
+<?php
+
+
+/**
+ * Implements hook_field_info().
+ */
+function alumni_field_button_field_info()
+{
+    return array(
+        'alumni_button' => array(
+            'label' => t('Button mit Link'),
+             'description' => t('Button mit Link'),
+            'default_widget' => 'alumni_button_widget',
+            'default_formatter' => 'alumni_button_default',
+        ),
+    );
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function alumni_field_button_field_is_empty($item, $field)
+{
+    return empty($item['alumni_button']);
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function alumni_field_button_field_formatter_info() {
+    return array(
+        'alumni_button_default' => array(
+            'label' => t('Edit form only'),
+            'description' => t('Button will only be displayed when a user is on the edit page.'),
+            'field types' => array('alumni_button'),
+        ),
+        'alumni_button_view' => array(
+            'label' => t('Always visible'),
+            'description' => t('Displays the button while viewing the entity (in addition to the edit form).'),
+            'field types' => array('alumni_button'),
+        ),
+    );
+}
+
+/**
+ * Implements hook_field_formatter_prepare_view().
+ */
+function alumni_field_button_field_formatter_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items, $displays)
+{
+    if ($field['type'] == 'alumni_button') {
+        foreach ($items as $eid => $item) {
+            $items[$eid]['alumni_button'] = $field['settings']['button_url'];
+        }
+    }
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function alumni_field_button_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display)
+{
+    $element = array();
+
+    switch ($display['type']) {
+        case 'alumni_button_view':
+            foreach ($items as $delta => $item) {
+                $settings = $field['settings'];
+                $openStyle = $settings['url_open_style'] == 'new_tab' ? ' target="_blank"' : '';
+                $addClasses = isset($settings['additional_classes']) ? $settings['additional_classes'] : '';
+                $urlStyle = $settings['url_style'] == 'intern' ? base_path() : '';
+
+                $element[$delta] = array(
+                    '#markup' => '<a href="' . $urlStyle . $items['alumni_button'] . '"' . $openStyle . ' class="button btn ' . $addClasses . '">' . $instance['label'] . '</a>',
+                );
+            }
+            break;
+    }
+
+    return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function alumni_field_button_field_widget_info() {
+    return array(
+        'alumni_button_widget' => array(
+            'label' => t('Button'),
+            'field types' => array('alumni_button'),
+            'behaviors' => array(
+                'default value' => FIELD_BEHAVIOR_NONE,
+            ),
+        ),
+    );
+}
+
+
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function alumni_field_button_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
+{
+    switch ($instance['widget']['type']) {
+        case 'alumni_button_widget':
+            $settings = $field['settings'];
+            $openStyle = $settings['url_open_style'] == 'new_tab' ? ' target="_blank"' : '';
+            $addClasses = isset($settings['additional_classes']) ? $settings['additional_classes'] : '';
+            $urlStyle = $settings['url_style'] == 'intern' ? base_path() : '';
+
+            $element['alumni_button'] = array(
+                '#markup' => '<a href="' . $urlStyle . $settings['button_url'] . '"' . $openStyle . ' class="button btn ' . $addClasses . '">' . $instance['label'] . '</a>',
+            );
+
+            break;
+    }
+    return $element;
+}
+
+/**
+ * Implements hook_field_settings_form().
+ */
+function alumni_field_button_field_settings_form($field, $instance, $has_data)
+{
+    $form = array();
+    $settings = $field['settings'];
+    $form['button_url'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Link angeben'),
+        '#default_value' => isset($settings['button_url']) ? $settings['button_url'] : '',
+        '#required' => TRUE,
+        '#description' => t('Internen oder externen Link angeben.'),
+    );
+
+    $form['url_style'] = array(
+        '#type' => 'radios',
+        '#title' => t('Art des Links'),
+        '#default_value' => isset($settings['url_style']) ? $settings['url_style'] : '',
+        '#options' => array(
+            'intern' => t('intern'),
+            'extern' => t('extern'),
+        ),
+        '#required' => TRUE,
+    );
+
+    $form['url_open_style'] = array(
+        '#type' => 'radios',
+        '#title' => t('Öffnen des Links'),
+        '#default_value' => isset($settings['url_open_style']) ? $settings['url_open_style'] : '',
+        '#options' => array(
+            'default' => t('Standard'),
+            'new_tab' => t('Im neuen Tab'),
+        ),
+        '#required' => TRUE,
+    );
+
+    $form['additional_classes'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Weitere CSS Klassen'),
+        '#default_value' => (isset($settings['additional_classes']) ? $settings['additional_classes'] : NULL),
+        '#description' => t('Optional weitere CSS Klassen angeben, die dem Element hinzugefügt werden sollen. Klassen durch ein Leerzeichen trennen.')
+    );
+
+    return $form;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function alumni_field_button_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id)
+{
+    if ($form['#field']['type'] == 'alumni_button') {
+        // Hide the cardinality and set it to one.
+        $form['field']['cardinality']['#type'] = 'hidden';
+        $form['field']['cardinality']['#value'] = 1;
+    }
+}

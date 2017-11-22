@@ -1,0 +1,242 @@
+<?php
+
+function array_markup_replace(&$value, $key, $string) {
+    $result = false;
+
+    if (!is_object($value)) {
+        if (is_array($value)) {
+            foreach ($value as $k => &$v) {
+                //$result = $k === $key ? $v : array_key_search($v, $key);
+
+                if ($k === $key) {
+                    $v[0]['#markup'] = $string;
+                    break;
+                }
+                else {
+                    array_markup_replace($v, $key, $string);
+                }
+
+            }
+        }
+    }
+    return $result;
+}
+
+function array_search_hide(&$value, $key) {
+    $result = false;
+
+    if (!is_object($value)) {
+        if (is_array($value)) {
+            foreach ($value as $k => &$v) {
+                //$result = $k === $key ? $v : array_key_search($v, $key);
+
+                if ($k === $key) {
+                    dpm($v);
+                    hide($v);
+                    break;
+                }
+                else {
+                    array_search_hide($v, $key);
+                }
+
+            }
+        }
+    }
+    return $result;
+}
+
+/**
+ * Implements hook_user_view().
+ */
+function alumni_user_profile_user_view($account, $view_mode, $langcode)
+{
+
+    $PDFBtnMachineName = variable_get('aup_cv_export_pdf_machine_name', '');
+    global $user;
+
+    if ($account->uid == $user->uid || user_has_role(3, user_load($user->uid))) {
+        $markupHTML = '<a class="btn button export-pdf-btn" target="_blank" href="' . base_path() . 'usercv/' . $account->uid . '/pdf">' . t('PDF exportieren') . '</a><div class="clear-float"></div>';
+
+        array_markup_replace($account->content, $PDFBtnMachineName, $markupHTML);
+    } else {
+        array_search_hide($account->content, $PDFBtnMachineName);
+    }
+}
+
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function alumni_user_profile_form_user_profile_form_alter(&$form, &$form_state, $form_id)
+{
+
+    $PDFBtnMachineName = variable_get('aup_cv_export_pdf_machine_name', '');
+
+    array_search_hide($form, $PDFBtnMachineName);
+
+}
+
+
+
+//Funktion zum Erzeugen der intern Links für Drupal
+function alumni_user_profile_menu() {
+
+    $schema = extended_user_profile_dbschema();
+    if(!db_table_exists('alumni_suggestions')) {
+        db_create_table('alumni_suggestions', $schema['alumni_suggestions']);
+    }
+
+    $items = array();
+
+    //Item für Ansicht des PDFs des Benutzerprofiles definieren
+    $items['usercv/%user_uid/pdf'] = array(
+        'title' => t('Lebenslauf exportieren'),
+        'page callback' => 'print_usercv',
+        'page arguments' => array(1),
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['suggestions'] = array(
+        'title' => t('Eingereichte Vorschläge'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('get_suggestions_form'),
+        'access arguments' => array('access administration pages'),
+        'file' => 'suggest_user_profile.pages.inc',
+    );
+
+    $items['suggest/school'] = array(
+        'title' => t('Schule vorschlagen'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('suggest_school_form'),
+        'access callback' => 'user_is_logged_in',
+        'file' => 'suggest_user_profile.pages.inc',
+    );
+
+    $items['suggest/interest'] = array(
+        'title' => t('Interesse vorschlagen'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('suggest_interest_form'),
+        'access callback' => 'user_is_logged_in',
+        'file' => 'suggest_user_profile.pages.inc',
+    );
+
+    $items['admin/config/alumni'] = array(
+        'title' => t('Alumni'),
+        'position' => 'left',
+        'weight' => -25,
+        'page callback' => 'system_admin_menu_block_page',
+        'access arguments' => array('access administration pages'),
+    );
+
+    $items['admin/config/alumni/profile-cv'] = array(
+        'title' => t('Benutzerprofil und Lebenslauf'),
+        'description' => t('Systemnamen für Taxonomien, Einstellungen fürs Exportieren des Lebenslaufs, etc.'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('profile_cv_form'),
+        'access arguments' => array('administer authentication'),
+        'file' => 'admin_settings.pages.inc',
+    );
+
+    return $items;
+
+}
+
+//Funktion wird benötigt, damit der Platzhalter %user_uid aufgelöst werden kann
+function user_uid_to_arg($arg) {
+    // Give back the current user uid when called from eg. tracker, aka.
+    // with an empty arg. Also use the current user uid when called from
+    // the menu with a % for the current account link.
+    return empty($arg) || $arg == '%' ? $GLOBALS['user']->uid : $arg;
+}
+
+//Definieren des Arrays für die Datenbanktabellen und der Spalten
+function extended_user_profile_dbschema() {
+    $schema = array();
+
+    $schema['alumni_suggestions'] = array(
+        'description' => 'The table for extended_user_profile_suggestions',
+        'fields' => array(
+            'id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'category' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+        )
+    );
+
+    return $schema;
+}
+
+//Dompdf wird verwendet, um aus dem HTML Code vom Lebenslauf ein PDF zu erzeugen
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
+function print_usercv($user_id) {
+
+
+    //Überprüfen, ob der Benutzer existiert
+    $userLoad = user_load($user_id);
+    if (!$userLoad) {
+        drupal_not_found();
+        drupal_exit();
+    }
+
+    global $user;
+
+    //Überprüfen, ob der Benutzer selber seine Seite aufruft oder ein Administrator dieses tut. Andere Benutzer sollen das PDF nicht exportieren dürfen
+    if ($user_id != $user->uid && !user_has_role(3, user_load($user->uid))) {
+        drupal_access_denied();
+        drupal_exit();
+    }
+
+    //Autoloader von dompdf laden
+    require_once 'sites/all/libraries/dompdf/autoload.inc.php';
+
+    $userView = user_view($userLoad);
+
+    //Lebenslauf anhand der ID laden
+    $userCV = drupal_render($userView['field_user_cv']);
+
+    //Stylesheet laden, in HTML einbinden und das userCV Array rendern
+    $stylesheet = file_get_contents(drupal_get_path('theme', 'multipurpose_zymphonies_theme') . '/css/style.css');
+    $HTML = '<html>' .
+        '<head>' .
+        '<style>' . $stylesheet . '</style>' .
+        '</head>' .
+        '<body>' .
+        $userCV.
+        '</body>' .
+        '</html>';
+
+
+    //dompdf instanziieren
+    $dompdf = new Dompdf();
+
+    //Optionen definieren und dompdf übergeben
+    $options = new Options();
+    $options->setIsRemoteEnabled(true);
+    $dompdf->setOptions($options);
+
+    //HTML in dompdf laden
+    $dompdf->loadHtml($HTML);
+
+    //HTML als PDF rendern
+    $dompdf->render();
+
+    //Ergebnis an den Browser senden. Bei Attachment = 0 wird das PDF im Browser angezeigt, falls möglich
+    $dompdf->stream('Lebenslauf.pdf', array('compress' => 1, 'Attachment' => 0));
+
+    //Funktion aufrufen, damit es nicht zur Warnung Header already sent kommt
+    drupal_exit();
+
+}

@@ -1,0 +1,243 @@
+<?php
+
+
+/**
+ * Implements hook_field_info().
+ */
+function alumni_field_school_field_info()
+{
+    // Returning array.
+    return array(
+        // Which is called textf.
+        'alumni_school' => array(
+            // Name of our type will be 'Te(x/s)t field'.
+            'label' => t('Schule Autosuche'),
+            // Description of our type.
+            'description' => t('Schule Autosuche für Alumnis'),
+            // Standart widget that will be dispalyed at once.
+            // after that we choose field type
+            'default_widget' => 'alumni_school_widget',
+            // Standart that will be dispayed right after we choose field type.
+            'default_formatter' => 'alumni_school_formatter',
+        ),
+    );
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function alumni_field_school_field_is_empty($item, $field)
+{
+    return empty($item['alumni_school']);
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function alumni_field_school_field_formatter_info() {
+    // Returning array.
+    return array(
+        // Name of our format for code.
+        'alumni_school_formatter' => array(
+            // Dispalyed name of format.
+            'label' => t('Standard'),
+            // Field in DB with which our format will work.
+            'field types' => array('alumni_school'),
+        ),
+    );
+}
+
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function alumni_field_school_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display)
+{
+    $element = array();
+
+    switch ($display['type']) {
+        case 'alumni_school_formatter':
+            foreach ($items as $delta => $item) {
+                $element[$delta] = array(
+                    '#markup' => $item['alumni_school'],
+                );
+            }
+            break;
+    }
+
+    return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function alumni_field_school_field_widget_info() {
+    // Returning massive.
+    return array(
+        // With textf name.
+        'alumni_school_widget' => array(
+            // Our widget will be named textf label.
+            'label' => t('Textfeld Autocomplete'),
+            // Our widget will work with a field in DB under the name textf.
+            'field types' => array('alumni_school'),
+        ),
+    );
+}
+
+
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function alumni_field_school_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
+{
+
+    /*$query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', $field['settings']['content_type_select']);
+    $nodes = $query->execute();
+
+    $nids = array();
+
+    foreach ($nodes['node'] as $node) {
+        array_push($nids, $node->nid);
+    }
+
+    dpm(node_load_multiple($nids));*/
+
+    $value = isset($items[$delta]['alumni_school']) ? $items[$delta]['alumni_school'] : '';
+    switch ($instance['widget']['type']) {
+        // If parameter case is 'textf'.
+        case 'alumni_school_widget':
+            // Then we assign to textf element an array.
+            // With the following values.
+            $element['alumni_school'] = array(
+                // Element type 'textfield'.
+                '#type' => 'textfield',
+                // Heading given in element settings.
+                '#title' => $element['#title'],
+                // Widget description is given in element settings.
+                '#description' => $element['#description'],
+                // Our widget will have standart value textfield.
+                '#default_value' => $value,
+                // If element is required it will be indicated in settings of the very element.
+                '#required' => $element['#required'],
+                '#autocomplete_path'=>'visitedschools/autocomplete/' . $field['settings']['content_type_select'],
+                // Element location –
+                // If it's indicated, value should be used, if not, value is 0.
+                '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
+                // Line that we'll need for the output.
+                '#delta' => $delta,
+            );
+            break;
+    }
+    return $element;
+}
+
+/**
+ * Implements hook_field_validate().
+ */
+function alumni_field_school_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
+{
+    foreach ($items as $delta => $item) {
+
+        if (!empty($item['alumni_school'])) {
+
+            $query = db_select('node', 'n');
+            $query->fields('n', array('title'));
+            $query->condition('n.title', $item['alumni_school'], '=');
+            $query->range(0, 1);
+            $result = $query->execute();
+
+            if (!$result->fetchAssoc()) {
+                $errors[$field['field_name']][$langcode][$delta][] = array(
+                    'error' => 'alumni_school_invalid',
+                    'message' => t('Angegebene Schule ist ungültig. Falls die Schule in der Liste nicht vorhanden ist, bitte eine Schule vorschlagen.'),
+                );
+            }
+        }
+    }
+}
+
+/**
+ * Implements hook_field_widget_error().
+ */
+function alumni_field_school_field_widget_error($element, $error, $form, &$form_state)
+{
+    switch ($error['error']) {
+        case 'alumni_school_invalid':
+            form_error($element, $error['message']);
+            break;
+    }
+}
+
+/**
+ * Implements hook_field_settings_form().
+ */
+function alumni_field_school_field_settings_form($field, $instance, $has_data)
+{
+    $form = array();
+
+
+    $options = array();
+
+    $types = node_type_get_types();
+
+    foreach ($types as $type) {
+        $options[$type->type] = $type->type;
+    }
+
+    $settings = $field['settings'];
+
+    $form['content_type_select'] = array(
+        '#type' => 'select',
+        '#title' => t('Inhaltstyp auswählen'),
+        '#options' => $options,
+        '#default_value' => isset($settings['content_type_select']) ? $settings['content_type_select'] : '',
+        '#empty_option' => t('- Keine -'),
+        '#required' => TRUE,
+    );
+
+    return $form;
+}
+
+//Funktion zum Erzeugen der intern Links für Drupal
+function alumni_field_school_menu() {
+
+    $items['visitedschools/autocomplete/%'] = array(
+        'title' => '',
+        'description' => '',
+        'page callback' => 'visited_schools_autocomplete',
+        'page arguments' => array(2),
+        'access callback' => TRUE,
+    );
+
+    return $items;
+
+}
+
+function visited_schools_autocomplete($type, $string) {
+
+    $stringArr = preg_split('/ /', $string);
+
+    $matches = array();
+
+    $query = db_select('node', 'n');
+    $query->fields('n', array('title'));
+    $query->condition('n.type', $type, '=');
+
+    foreach ($stringArr as $string) {
+        if (!empty($string)) {
+            $query->condition('n.title', '%' . db_like($string) . '%', 'LIKE');
+        }
+    }
+
+    $query->range(0, 10);
+    $result = $query->execute();
+
+    foreach ($result as $term) {
+        $matches[check_plain($term -> title)] = check_plain($term -> title);
+    }
+
+    drupal_json_output($matches);
+}

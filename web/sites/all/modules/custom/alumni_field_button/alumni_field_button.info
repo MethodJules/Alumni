@@ -1,0 +1,4 @@
+name = Alumni Field Button
+description = Button with link for fields
+core = 7.x
+package = Alumni Portal

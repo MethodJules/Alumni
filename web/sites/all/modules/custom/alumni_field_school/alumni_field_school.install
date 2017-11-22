@@ -1,0 +1,13 @@
+<?php
+
+function alumni_field_school_field_schema($field) {
+    $schema = array();
+    $schema['columns'] = array(
+        'alumni_school' => array(
+            'type' => 'text',
+            'size' => 'medium',
+        )
+    );
+
+    return $schema;
+}
