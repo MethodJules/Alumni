@@ -47,7 +47,7 @@
         "drupal/link": "1.4",
         "drupal/markup": "1.2",
         "drupal/smtp": "^1.7",
-        "drupal/taxonomy_manager": "^1.0",
+        "drupal/taxonomy_manager": "1.0",
         "drupal/token": "^1.7",
         "drupal/views": "^3.18",
         "drush/drush": "~8.0",
