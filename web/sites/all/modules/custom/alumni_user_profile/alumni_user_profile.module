@@ -31,7 +31,6 @@ function array_search_hide(&$value, $key) {
                 //$result = $k === $key ? $v : array_key_search($v, $key);
 
                 if ($k === $key) {
-                    dpm($v);
                     hide($v);
                     break;
                 }
@@ -204,20 +203,35 @@ function print_usercv($user_id) {
 
     $userView = user_view($userLoad);
 
+    $cvMachineName = variable_get('aup_cv_machine_name');
+
     //Lebenslauf anhand der ID laden
-    $userCV = drupal_render($userView['field_user_cv']);
+    $userCV = $userView[$cvMachineName];
+
+    $PDFBtnMachineName = variable_get('aup_cv_export_pdf_machine_name', '');
+
+    array_search_hide($userCV, $PDFBtnMachineName);
 
     //Stylesheet laden, in HTML einbinden und das userCV Array rendern
     $stylesheet = file_get_contents(drupal_get_path('theme', 'multipurpose_zymphonies_theme') . '/css/style.css');
     $HTML = '<html>' .
         '<head>' .
-        '<style>' . $stylesheet . '</style>' .
+        '<style>' .
+        $stylesheet .
+
+        'body { padding: 2cm; color: #000000; background: #fff;}' .
+        '.cv-one-column .field-items {  margin-left: 250px; }' .
+        '.cv-user-image { width: 4cm; top: 0; left: 13cm;}' .
+
+        '</style>' .
         '</head>' .
         '<body>' .
-        $userCV.
+        drupal_render($userCV).
         '</body>' .
         '</html>';
 
+    //print ($HTML);
+    //return;
 
     //dompdf instanziieren
     $dompdf = new Dompdf();
@@ -230,6 +244,7 @@ function print_usercv($user_id) {
     //HTML in dompdf laden
     $dompdf->loadHtml($HTML);
 
+    $dompdf->setPaper('a4', 'portrait');
     //HTML als PDF rendern
     $dompdf->render();
 

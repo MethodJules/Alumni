@@ -1929,11 +1929,17 @@ form .field-multiple-table th.field-label {
 /* User CV */
 
 .cv-user-image {
-  margin-top: 20px;
+  //margin-top: 20px;
+  //float: right;
+  position: absolute;
+  //left: 100px;
+//  right: 0px;
+  top: 0;
 }
 
-.cv-headline>div:first-child {
-  //height: 60px;
+.cv-headline {
+  position: relative;
+  //width: 500px;
 }
 
 .cv-headline > div > span {
@@ -1945,9 +1951,9 @@ form .field-multiple-table th.field-label {
   clear: both;
 }
 
-.cv-sub-headline>div:first-child {
-  padding-bottom: 20px;
-  padding-top: 20px;
+.cv-sub-headline > div:first-child {
+  padding-bottom: 30px;
+  padding-top: 30px;
 }
 
 .cv-sub-headline > div > span {
@@ -1955,9 +1961,18 @@ form .field-multiple-table th.field-label {
   font-weight: bold;
 }
 
+.cv-one-column {
+  max-height:30px;
+}
+
 .cv-one-column .field-label {
+  float: left;
   width: 250px;
 
+}
+
+.cv-one-column .field-items {
+  //float: left;
 }
 
 .cv-one-column.field {
@@ -1969,12 +1984,7 @@ form .field-multiple-table th.field-label {
 }
 
 .cv-one-column p, .cv-two-column p {
-  margin-bottom: 0px;
-}
-
-.cv-right-float {
-  float: right;
-  margin-right: 0px;
+  margin-bottom: 0;
 }
 
 .cv-left-float {

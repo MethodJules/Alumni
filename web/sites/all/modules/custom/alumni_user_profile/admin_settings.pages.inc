@@ -1,16 +1,6 @@
 <?php
 
 function profile_cv_form($form, &$form_state) {
-    $form = array();
-
-    global $user;
-    $user=user_load($user->uid);
-
-    $userView = user_view($user);
-    //dpm($userView);
-    //print(drupal_render($userView['#fieldgroups']['group_user_personal']));
-    print(drupal_render($userView['field_user_cv']));
-
     //CSS laden
     //drupal_add_css(drupal_get_path('module', 'alumni_user_profile') . '/css/aup_custom.css', array('group' => CSS_DEFAULT));
     //drupal_add_css(drupal_get_path('module', 'alumni_user_profile') . '/css/aup_media.css', array('group' => CSS_DEFAULT));
@@ -48,6 +38,14 @@ function profile_cv_form($form, &$form_state) {
         '#options' => $options,
         '#empty_option' => t('- Keine -'),
         '#default_value' => variable_get('aup_cv_export_pdf_machine_name', ''),
+    );
+
+    $form['user_cv']['aup_cv_machine_name'] = array(
+        '#type' => 'select',
+        '#title' => t('Systemname der Field Collection für den Lebenslauf'),
+        '#options' => $options,
+        '#empty_option' => t('- Keine -'),
+        '#default_value' => variable_get('aup_cv_machine_name', ''),
     );
 
     $form = system_settings_form($form);
