@@ -36,6 +36,7 @@
         "drupal/drupal": "~7.0",
         "drupal/ds": "2.14",
         "drupal/entity": "^1.8",
+        "drupal/feeds": "2.x-dev",
         "drupal/field_collection": "1.x-dev",
         "drupal/field_group": "1.6",
         "drupal/geocoder": "^1.3",
