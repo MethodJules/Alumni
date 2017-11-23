@@ -1,23 +1,6 @@
 <?php
 
 function profile_cv_form($form, &$form_state) {
-    //CSS laden
-    //drupal_add_css(drupal_get_path('module', 'alumni_user_profile') . '/css/aup_custom.css', array('group' => CSS_DEFAULT));
-    //drupal_add_css(drupal_get_path('module', 'alumni_user_profile') . '/css/aup_media.css', array('group' => CSS_DEFAULT));
-
-
-    $form = array();
-
-    $form['machine_names'] = array(
-        '#type'  => 'fieldset',
-        '#title' => t('Systemnamen festlegen'),
-    );
-
-    $form['machine_names']['aup_jfproject_machine_name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Systemname der Taxonomie für Jugend Forscht Projekte'),
-        '#default_value' => variable_get('aup_jfproject_machine_name', ''),
-    );
 
     $form['user_cv'] = array(
         '#type'  => 'fieldset',
@@ -46,6 +29,20 @@ function profile_cv_form($form, &$form_state) {
         '#options' => $options,
         '#empty_option' => t('- Keine -'),
         '#default_value' => variable_get('aup_cv_machine_name', ''),
+    );
+
+    $form['user_cv']['aup_cv_edge_margins'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Abstand vom Inhalt zum Seitenrand im PDF festlegen'),
+        '#description' => t('Abstand in cm angeben, ohne Leerzeichen und kein Komma. Beispiel: 1cm, 1.5cm, usw.'),
+        '#default_value' => variable_get('aup_cv_edge_margins', '1cm'),
+    );
+
+    $form['user_cv']['aup_cv_image_size'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Größe des Bildes im PDF festlegen'),
+        '#description' => t('Größe in cm angeben, ohne Leerzeichen und kein Komma. Beispiel: 1cm, 1.5cm, usw.'),
+        '#default_value' => variable_get('aup_cv_image_size', '4cm'),
     );
 
     $form = system_settings_form($form);

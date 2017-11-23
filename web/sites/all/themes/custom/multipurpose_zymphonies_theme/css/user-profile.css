@@ -1,0 +1,112 @@
+.clearfix:after {
+    visibility: hidden;
+    display: block;
+    font-size: 0;
+    content: " ";
+    clear: both;
+    height: 0;
+}
+
+/*User Profile*/
+
+.horizontal-tabs .field {
+    padding-bottom: 10px;
+}
+
+a.tabledrag-handle .handle {
+    height: 22px;
+    width: 22px;
+}
+
+form .field-multiple-table th.field-label {
+    padding-left: 10px;
+}
+
+.field-type-alumni-button {
+    height: 30px;
+    margin-bottom: 10px;
+}
+
+.field-type-text-long .filter-wrapper {
+    display: none;
+}
+
+/* User CV */
+
+.cv-user-image {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.cv-headline {
+    position: relative;
+}
+
+.cv-headline > div > span {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.cv-clear-float {
+    clear: both;
+}
+
+.cv-sub-headline {
+    page-break-inside: avoid;
+}
+
+.cv-sub-headline > div:first-child {
+    padding-bottom: 30px;
+    padding-top: 30px;
+}
+
+.cv-sub-headline > div > span {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.cv-one-column {
+    max-height:30px;
+}
+
+.cv-one-column .field-label {
+    float: left;
+    width: 250px;
+
+}
+
+.cv-one-column .field-items {
+}
+
+.cv-one-column.field {
+    padding-bottom: 0;
+}
+
+.cv-two-column .field {
+    padding-bottom: 0;
+}
+
+.cv-one-column p, .cv-two-column p {
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+.cv-left-float {
+    float: left;
+}
+
+.cv-left-column {
+    width: 250px;
+    float: left;
+}
+
+.cv-right-column {
+    float: left;
+}
+
+.export-pdf-btn {
+    margin-top: 30px;
+}
+
+

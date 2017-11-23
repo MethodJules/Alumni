@@ -212,16 +212,60 @@ function print_usercv($user_id) {
 
     array_search_hide($userCV, $PDFBtnMachineName);
 
-    //Stylesheet laden, in HTML einbinden und das userCV Array rendern
-    $stylesheet = file_get_contents(drupal_get_path('theme', 'multipurpose_zymphonies_theme') . '/css/style.css');
+    $fontPath = base_path() . drupal_get_path('module', 'alumni_user_profile') . '/fonts/';
+
+    //print($fontPath);
+    //Stylesheet laden, in HTML einbinden und das userCV Array renden
+    $stylesheet = file_get_contents(drupal_get_path('theme', 'multipurpose_zymphonies_theme') . '/css/user-profile.css');
+
     $HTML = '<html>' .
         '<head>' .
         '<style>' .
         $stylesheet .
 
-        'body { padding: 2cm; color: #000000; background: #fff;}' .
-        '.cv-one-column .field-items {  margin-left: 250px; }' .
-        '.cv-user-image { width: 4cm; top: 0; left: 13cm;}' .
+        '
+        @font-face {
+            font-family: "Roboto";
+            font-weight: normal;
+            font-style: normal;
+            src: url("' . $fontPath . 'Roboto-Regular.ttf") format("truetype");
+        }
+
+        @font-face {
+            font-family: "Roboto";
+            font-weight: bold;
+            font-style: normal;
+            src: url("' . $fontPath . 'Roboto-Bold.ttf") format("truetype");
+        }
+
+        html {
+            margin: 0;
+        }
+
+        body {
+            margin: ' . variable_get("aup_cv_edge_margins", "1cm"). ';
+            padding: 0;
+            color: #000000;
+            background: #fff;
+            font-family: "Roboto";
+            
+        }
+        
+        .cv-one-column .field-items {
+            margin-left: 250px; 
+        }
+        
+        .cv-user-image {
+            width: ' . variable_get('aup_cv_image_size', '4cm') . ';            
+            top: 0;
+            right: 0;
+        }
+        
+        .cv-user-image img {
+            width: ' .variable_get('aup_cv_image_size', '4cm') . ';
+            height: auto;
+        }
+        ' .
 
         '</style>' .
         '</head>' .
@@ -233,18 +277,28 @@ function print_usercv($user_id) {
     //print ($HTML);
     //return;
 
+
     //dompdf instanziieren
-    $dompdf = new Dompdf();
+
 
     //Optionen definieren und dompdf übergeben
     $options = new Options();
-    $options->setIsRemoteEnabled(true);
-    $dompdf->setOptions($options);
+    $options->set('isRemoteEnabled', true);
+    //$options->set('defaultMediaType', 'all');
+
+    //$dompdf->setOptions($options);
+
+    //$options->set('isFontSubsettingEnabled' , true);
+    //$options->set('defaultFont', 'Courier');
+    $dompdf = new Dompdf($options);
+
+
 
     //HTML in dompdf laden
     $dompdf->loadHtml($HTML);
 
-    $dompdf->setPaper('a4', 'portrait');
+    $dompdf->setPaper('A4', 'portrait');
+
     //HTML als PDF rendern
     $dompdf->render();
 
