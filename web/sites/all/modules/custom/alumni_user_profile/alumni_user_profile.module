@@ -212,11 +212,28 @@ function print_usercv($user_id) {
 
     array_search_hide($userCV, $PDFBtnMachineName);
 
-    $fontPath = base_path() . drupal_get_path('module', 'alumni_user_profile') . '/fonts/';
+    $fontPath = file_create_url('public://fonts') . '/';
+    $regularFont = '';
+    $boldFont = '';
 
-    //print($fontPath);
+    if (!empty(variable_get('aup_cv_regular_font_fid', '')))  {
+        $file = file_load(variable_get('aup_cv_regular_font_fid', ''));
+
+        if ($file) {
+            $regularFont = $file->filename;
+        }
+    }
+
+    if (!empty(variable_get('aup_cv_bold_font_fid', '')))  {
+        $file = file_load(variable_get('aup_cv_bold_font_fid', ''));
+
+        if ($file) {
+            $boldFont = $file->filename;
+        }
+    }
+
     //Stylesheet laden, in HTML einbinden und das userCV Array renden
-    $stylesheet = file_get_contents(drupal_get_path('theme', 'multipurpose_zymphonies_theme') . '/css/user-profile.css');
+    $stylesheet = file_get_contents(drupal_get_path('theme', variable_get('aup_cv_theme_name', '')) . variable_get('aup_cv_theme_css_file', ''));
 
     $HTML = '<html>' .
         '<head>' .
@@ -225,17 +242,17 @@ function print_usercv($user_id) {
 
         '
         @font-face {
-            font-family: "Roboto";
+            font-family: "' . variable_get("aup_cv_font_family", "") . '";
             font-weight: normal;
             font-style: normal;
-            src: url("' . $fontPath . 'Roboto-Regular.ttf") format("truetype");
+            src: url("' . $fontPath . $regularFont . '") format("truetype");
         }
 
         @font-face {
-            font-family: "Roboto";
+            font-family: "' . variable_get("aup_cv_font_family", "") . '";
             font-weight: bold;
             font-style: normal;
-            src: url("' . $fontPath . 'Roboto-Bold.ttf") format("truetype");
+            src: url("' . $fontPath . $boldFont . '") format("truetype");
         }
 
         html {
@@ -243,11 +260,11 @@ function print_usercv($user_id) {
         }
 
         body {
-            margin: ' . variable_get("aup_cv_edge_margins", "1cm"). ';
+            margin: ' . variable_get("aup_cv_edge_margins", "1cm") . ';
             padding: 0;
             color: #000000;
             background: #fff;
-            font-family: "Roboto";
+            font-family: "' . variable_get("aup_cv_font_family", "") . '";
             
         }
         
@@ -274,25 +291,12 @@ function print_usercv($user_id) {
         '</body>' .
         '</html>';
 
-    //print ($HTML);
-    //return;
-
-
-    //dompdf instanziieren
-
-
     //Optionen definieren und dompdf übergeben
     $options = new Options();
     $options->set('isRemoteEnabled', true);
-    //$options->set('defaultMediaType', 'all');
 
-    //$dompdf->setOptions($options);
-
-    //$options->set('isFontSubsettingEnabled' , true);
-    //$options->set('defaultFont', 'Courier');
+    //dompdf instanziieren
     $dompdf = new Dompdf($options);
-
-
 
     //HTML in dompdf laden
     $dompdf->loadHtml($HTML);
