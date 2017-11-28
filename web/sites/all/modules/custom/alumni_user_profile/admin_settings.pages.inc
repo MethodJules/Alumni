@@ -76,7 +76,10 @@ function profile_cv_form($form, &$form_state) {
     $form['user_cv']['aup_cv_font_family'] = array(
         '#type' => 'textfield',
         '#title' => t('Name für Font Family festlegen'),
-        '#description' => t('Name des Fonts angeben. Wird beim Erstellen des PDFs benötigt. Wenn eine Font hochgeladen wurde, muss dieser Wert gesetzt werden.'),
+        '#description' => t('Name des Fonts angeben. Wird beim Erstellen des PDFs benötigt. ' .
+            'Wenn eine Font hochgeladen wurde, muss dieser Wert gesetzt werden. ' .
+            'Ein bereits verwendeter Name in Kombination mit hochgeladenen Fonts kann nicht noch einmal verwendet werden. ' .
+            'In diesem Fall ist es notwendig einen neuen Namen zu vergeben.'),
         '#default_value' => variable_get('aup_cv_font_family', ''),
     );
 
@@ -160,6 +163,10 @@ function profile_cv_form_validate($form, &$form_state) {
 
                 //Datei speichern und die fid als Variable aufnehmen
                 file_save($file);
+
+                $oldFile = file_load(variable_get('aup_cv_regular_font_fid'));
+                file_delete($oldFile);
+
                 variable_set('aup_cv_regular_font_fid', $file->fid);
             } else {
                 form_set_error('file', t('Datei konnte nicht geschrieben werden.'));
@@ -185,6 +192,10 @@ function profile_cv_form_validate($form, &$form_state) {
 
                 //Datei speichern und die fid als Variable aufnehmen
                 file_save($file);
+
+                $oldFile = file_load(variable_get('aup_cv_bold_font_fid'));
+                file_delete($oldFile);
+
                 variable_set('aup_cv_bold_font_fid', $file->fid);
             } else {
                 form_set_error('file', t('Datei konnte nicht geschrieben werden.'));
@@ -211,7 +222,6 @@ function profile_cv_form_validate($form, &$form_state) {
 }
 
 function profile_cv_form_submit($form, &$form_state) {
-    dpm($form_state);
 
     if ($form_state['triggering_element']['#name'] === 'delete_regular_font_button') {
         //Datei laden
