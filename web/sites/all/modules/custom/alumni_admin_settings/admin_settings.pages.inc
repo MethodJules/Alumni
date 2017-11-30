@@ -1,6 +1,6 @@
 <?php
 
-function profile_cv_form($form, &$form_state) {
+function profile_cv_settings_form($form, &$form_state) {
 
     $form['user_cv'] = array(
         '#type'  => 'fieldset',
@@ -19,7 +19,7 @@ function profile_cv_form($form, &$form_state) {
         '#type' => 'select',
         '#title' => t('Systemname des Markup Feldes für den PDF Export Button'),
         '#options' => $options,
-        '#empty_option' => t('- Keine -'),
+        '#empty_option' => SELECT_DEFAULT,
         '#required' => TRUE,
         '#default_value' => variable_get('aup_cv_export_pdf_machine_name', ''),
     );
@@ -28,7 +28,7 @@ function profile_cv_form($form, &$form_state) {
         '#type' => 'select',
         '#title' => t('Systemname der Field Collection für den Lebenslauf'),
         '#options' => $options,
-        '#empty_option' => t('- Keine -'),
+        '#empty_option' => SELECT_DEFAULT,
         '#required' => TRUE,
         '#default_value' => variable_get('aup_cv_machine_name', ''),
     );
@@ -45,7 +45,7 @@ function profile_cv_form($form, &$form_state) {
         '#type' => 'select',
         '#title' => t('Aktuell eingeschaltetes Theme auswählen'),
         '#options' => $options,
-        '#empty_option' => t('- Keine -'),
+        '#empty_option' => SELECT_DEFAULT,
         '#required' => TRUE,
         '#default_value' => variable_get('aup_cv_theme_name', ''),
     );

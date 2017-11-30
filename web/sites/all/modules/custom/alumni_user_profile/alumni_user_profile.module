@@ -80,11 +80,6 @@ function alumni_user_profile_form_user_profile_form_alter(&$form, &$form_state, 
 //Funktion zum Erzeugen der intern Links für Drupal
 function alumni_user_profile_menu() {
 
-    $schema = extended_user_profile_dbschema();
-    if(!db_table_exists('alumni_suggestions')) {
-        db_create_table('alumni_suggestions', $schema['alumni_suggestions']);
-    }
-
     $items = array();
 
     //Item für Ansicht des PDFs des Benutzerprofiles definieren
@@ -93,47 +88,6 @@ function alumni_user_profile_menu() {
         'page callback' => 'print_usercv',
         'page arguments' => array(1),
         'access callback' => 'user_is_logged_in',
-    );
-
-    $items['suggestions'] = array(
-        'title' => t('Eingereichte Vorschläge'),
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('get_suggestions_form'),
-        'access arguments' => array('access administration pages'),
-        'file' => 'suggest_user_profile.pages.inc',
-    );
-
-    $items['suggest/school'] = array(
-        'title' => t('Schule vorschlagen'),
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('suggest_school_form'),
-        'access callback' => 'user_is_logged_in',
-        'file' => 'suggest_user_profile.pages.inc',
-    );
-
-    $items['suggest/interest'] = array(
-        'title' => t('Interesse vorschlagen'),
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('suggest_interest_form'),
-        'access callback' => 'user_is_logged_in',
-        'file' => 'suggest_user_profile.pages.inc',
-    );
-
-    $items['admin/config/alumni'] = array(
-        'title' => t('Alumni'),
-        'position' => 'left',
-        'weight' => -25,
-        'page callback' => 'system_admin_menu_block_page',
-        'access arguments' => array('access administration pages'),
-    );
-
-    $items['admin/config/alumni/profile-cv'] = array(
-        'title' => t('Benutzerprofil und Lebenslauf'),
-        'description' => t('Systemnamen für Taxonomien, Einstellungen fürs Exportieren des Lebenslaufs, etc.'),
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('profile_cv_form'),
-        'access arguments' => array('administer authentication'),
-        'file' => 'admin_settings.pages.inc',
     );
 
     return $items;
@@ -146,34 +100,6 @@ function user_uid_to_arg($arg) {
     // with an empty arg. Also use the current user uid when called from
     // the menu with a % for the current account link.
     return empty($arg) || $arg == '%' ? $GLOBALS['user']->uid : $arg;
-}
-
-//Definieren des Arrays für die Datenbanktabellen und der Spalten
-function extended_user_profile_dbschema() {
-    $schema = array();
-
-    $schema['alumni_suggestions'] = array(
-        'description' => 'The table for extended_user_profile_suggestions',
-        'fields' => array(
-            'id' => array(
-                'type' => 'int',
-                'not null' => TRUE,
-                'default' => 0
-            ),
-            'category' => array(
-                'type' => 'varchar',
-                'length' => 255,
-                'default' => ''
-            ),
-            'name' => array(
-                'type' => 'varchar',
-                'length' => 255,
-                'default' => ''
-            ),
-        )
-    );
-
-    return $schema;
 }
 
 //Dompdf wird verwendet, um aus dem HTML Code vom Lebenslauf ein PDF zu erzeugen

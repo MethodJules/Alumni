@@ -1,0 +1,149 @@
+<?php
+
+/**
+ * Implements hook_node_update().
+ */
+function alumni_projects_node_update($node)
+{
+    if ($node->type === 'projekte') {
+        setProjectManager($node);
+    }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function alumni_projects_node_insert($node)
+{
+    if ($node->type === 'projekte') {
+        setProjectManager($node);
+    }
+}
+
+/**
+ * Implements hook_node_prepare().
+ */
+function alumni_projects_node_prepare($node)
+{
+
+    global $user;
+
+    $query = db_select('alumni_projects_access', 'apc');
+    $query->fields('apc', array('user_id'));
+    $query->condition('apc.node_id', $node->nid, '=');
+    $query->condition('apc.user_id', $user->uid, '=');
+
+    $result = $query->execute();
+
+    if (!$result->fetchAssoc()) {
+        drupal_set_message(t('Sie sind nicht dem Team des Projektes zugeordnet. Nur Teammitglieder können Ihr Projekt bearbeiten. ' .
+            'Um Mitglied des Teams zu werden, muss dieses Projekt im Benutzerprofil im Bereich Jugend-Forscht Projekte hinzugefügt werden.'), 'error');
+        drupal_access_denied();
+        drupal_exit();
+
+    } else {
+
+        $query = db_select('alumni_projects_access', 'apc');
+        $query->fields('apc', array('user_id'));
+        $query->condition('apc.node_id', $node->nid, '=');
+        $query->condition('apc.user_id', $user->uid, '=');
+        $query->condition('apc.status', 0, '=');
+
+        $result = $query->execute();
+
+        if ($result->fetchAssoc()) {
+            drupal_set_message(t('Der Projektmanager hat Ihr Konto für dieses Projekt noch nicht freigeschaltet.'), 'error');
+            drupal_access_denied();
+            drupal_exit();
+
+        }
+    }
+
+}
+
+function setProjectManager($node) {
+    $query = db_select('alumni_projects_access', 'apc');
+    $query->fields('apc', array('user_id'));
+    $query->condition('apc.node_id', $node->nid, '=');
+    $query->condition('apc.manager', 1, '=');
+
+    $result = $query->execute();
+
+    if (!$result->fetchAssoc()) {
+
+        global $user;
+
+        $query = db_select('alumni_projects_access', 'apc');
+        $query->fields('apc', array('user_id'));
+        $query->condition('apc.node_id', $node->nid, '=');
+        $query->condition('apc.user_id', $user->uid, '=');
+
+        $result = $query->execute();
+
+        if ($result->fetchAssoc()) {
+            db_update('alumni_projects_access')
+                ->fields(array(
+                    'manager' => 1,
+                ))
+                ->condition('user_id', $user->uid, '=')
+                ->condition('node_id', $node->nid, '=')
+                ->execute();
+        } else {
+            db_insert('alumni_projects_access')
+                ->fields(array(
+                    'node_id' => $node->nid,
+                    'user_id' => $user->uid,
+                    'status' => 1,
+                    'manager' => 1,
+                ))
+                ->execute();
+        }
+    }
+}
+
+//Funktion zum Erzeugen der intern Links für Drupal
+function alumni_projects_menu() {
+
+    $items = array();
+
+    $schema = alumni_projects_dbschema();
+    if(!db_table_exists('alumni_projects_access')) {
+        db_create_table('alumni_projects_access', $schema['alumni_projects_access']);
+    }
+
+    return $items;
+
+}
+
+//Definieren des Arrays für die Datenbanktabellen und der Spalten
+function alumni_projects_dbschema() {
+    $schema = array();
+
+    $schema['alumni_projects_access'] = array(
+        'description' => 'The table for access control on projects',
+        'fields' => array(
+            'node_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'status' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'manager' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+        )
+    );
+
+    return $schema;
+}

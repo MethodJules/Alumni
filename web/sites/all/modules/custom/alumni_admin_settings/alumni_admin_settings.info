@@ -1,0 +1,4 @@
+name = Alumni Admin Settings
+description = Defines configuration area for other alumni modules
+core = 7.x
+package = Alumni Portal

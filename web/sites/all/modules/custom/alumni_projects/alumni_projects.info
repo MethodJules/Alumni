@@ -1,0 +1,6 @@
+name = Alumni Projects
+description = Extend content type projects with group rights rights for project manager
+core = 7.x
+package = Alumni Portal
+
+dependencies[] = alumni_admin_settings

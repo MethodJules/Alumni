@@ -1,4 +1,4 @@
-<?php
+ <?php
 
 
 /**
@@ -225,6 +225,7 @@ function visited_schools_autocomplete($type, $string) {
     $query = db_select('node', 'n');
     $query->fields('n', array('title'));
     $query->condition('n.type', $type, '=');
+    $query->condition('n.status', 1, '=');
 
     foreach ($stringArr as $string) {
         if (!empty($string)) {
@@ -235,8 +236,8 @@ function visited_schools_autocomplete($type, $string) {
     $query->range(0, 10);
     $result = $query->execute();
 
-    foreach ($result as $term) {
-        $matches[check_plain($term -> title)] = check_plain($term -> title);
+    foreach ($result as $data) {
+        $matches[check_plain($data -> title)] = check_plain($data -> title);
     }
 
     drupal_json_output($matches);

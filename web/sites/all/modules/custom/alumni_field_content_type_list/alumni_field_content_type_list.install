@@ -1,10 +1,10 @@
 <?php
 
 
-function alumni_field_taxonomy_list_field_schema($field) {
+function alumni_field_content_type_list_field_schema($field) {
     $schema = array();
     $schema['columns'] = array(
-        'alumni_taxonomy_list' => array(
+        'alumni_content_type_list' => array(
             'type' => 'text',
             'size' => 'medium',
         )

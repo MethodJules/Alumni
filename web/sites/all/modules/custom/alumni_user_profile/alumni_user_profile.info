@@ -1,8 +1,6 @@
 name = Alumni User Profile
-description = Extend the user profile for Alumni Portal
+description = Extend the user profile for Alumni Portal and export for cv
 core = 7.x
 package = Alumni Portal
 
-project = "alumni_user_profile"
-dependencies[] = ckeditor:ckeditor
-scripts[] = js/custom.js
+dependencies[] = alumni_admin_settings

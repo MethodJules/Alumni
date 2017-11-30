@@ -1,0 +1,29 @@
+<?php
+
+define('SELECT_DEFAULT', t('- Keine -'));
+
+//Funktion zum Erzeugen der intern Links für Drupal
+function alumni_admin_settings_menu() {
+
+    $items = array();
+
+    $items['admin/config/alumni'] = array(
+        'title' => t('Alumni'),
+        'position' => 'left',
+        'weight' => -25,
+        'page callback' => 'system_admin_menu_block_page',
+        'access arguments' => array('access administration pages'),
+    );
+
+    $items['admin/config/alumni/profile-cv'] = array(
+        'title' => t('Lebenslauf'),
+        'description' => t('Systemnamen für Content Types, Einstellungen fürs Exportieren des Lebenslaufs, etc.'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('profile_cv_settings_form'),
+        'access arguments' => array('administer authentication'),
+        'file' => 'admin_settings.pages.inc',
+    );
+
+    return $items;
+
+}

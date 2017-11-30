@@ -1,0 +1,142 @@
+<?php
+
+
+/**
+ * Implements hook_field_info().
+ */
+function alumni_field_content_type_list_field_info()
+{
+    return array(
+        'alumni_content_type_list' => array(
+            'label' => t('Content Type Liste'),
+            'description' => t('Select Feld mit Auswahlliste eines Content Type'),
+            'default_widget' => 'alumni_content_type_list_widget',
+            'default_formatter' => 'alumni_content_type_list_formatter',
+        ),
+    );
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function alumni_field_content_type_list_field_is_empty($item, $field)
+{
+    return empty($item['alumni_content_type_list']);
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function alumni_field_content_type_list_field_formatter_info() {
+    return array(
+        'alumni_content_type_list_formatter' => array(
+            'label' => t('Standard'),
+            'field types' => array('alumni_content_type_list'),
+        ),
+    );
+}
+
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function alumni_field_content_type_list_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display)
+{
+    $element = array();
+
+    switch ($display['type']) {
+        case 'alumni_content_type_list_formatter':
+            foreach ($items as $delta => $item) {
+                $element[$delta] = array(
+                    '#markup' => $item['alumni_content_type_list'],
+                );
+            }
+            break;
+    }
+
+    return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function alumni_field_content_type_list_field_widget_info() {
+
+    return array(
+        'alumni_content_type_list_widget' => array(
+            'label' => t('Auswahlliste'),
+            'field types' => array('alumni_content_type_list'),
+        ),
+    );
+}
+
+
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function alumni_field_content_type_list_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
+{
+    $value = isset($items[$delta]['alumni_content_type_list']) ? $items[$delta]['alumni_content_type_list'] : '';
+    switch ($instance['widget']['type']) {
+        case 'alumni_content_type_list_widget':
+
+            $settings = $field['settings'];
+
+            $options = array();
+
+            $query = db_select('node', 'n');
+            $query->fields('n', array('title'));
+            $query->condition('n.type', $settings['content_type_list_select'], '=');
+            $query->condition('n.status', 1, '=');
+
+            $result = $query->execute();
+
+            foreach ($result as $data) {
+                $options[check_plain($data -> title)] = check_plain($data -> title);
+            }
+
+            $element['alumni_content_type_list'] = array(
+                '#type' => 'select',
+                '#title' => $element['#title'],
+                '#description' => $element['#description'],
+                '#default_value' => $value,
+                '#empty_option' => t('- Keine -'),
+                '#options' => $options,
+                '#required' => $element['#required'],
+                '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
+                '#delta' => $delta,
+            );
+            break;
+    }
+    return $element;
+}
+
+/**
+ * Implements hook_field_settings_form().
+ */
+function alumni_field_content_type_list_field_settings_form($field, $instance, $has_data)
+{
+    $form = array();
+
+    $options = array();
+
+    $types = node_type_get_types();
+
+    foreach ($types as $type) {
+        $options[$type->type] = $type->type;
+    }
+
+    $settings = $field['settings'];
+
+    $form['content_type_list_select'] = array(
+        '#type' => 'select',
+        '#title' => t('Systemname des Content Types für Interessen'),
+        '#options' => $options,
+        '#default_value' => isset($settings['content_type_list_select']) ? $settings['content_type_list_select'] : '',
+        '#empty_option' => t('- Keine -'),
+        '#required' => TRUE,
+    );
+
+    return $form;
+}
