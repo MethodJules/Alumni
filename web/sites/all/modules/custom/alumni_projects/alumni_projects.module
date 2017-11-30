@@ -26,36 +26,38 @@ function alumni_projects_node_insert($node)
 function alumni_projects_node_prepare($node)
 {
 
-    global $user;
-
-    $query = db_select('alumni_projects_access', 'apc');
-    $query->fields('apc', array('user_id'));
-    $query->condition('apc.node_id', $node->nid, '=');
-    $query->condition('apc.user_id', $user->uid, '=');
-
-    $result = $query->execute();
-
-    if (!$result->fetchAssoc()) {
-        drupal_set_message(t('Sie sind nicht dem Team des Projektes zugeordnet. Nur Teammitglieder können Ihr Projekt bearbeiten. ' .
-            'Um Mitglied des Teams zu werden, muss dieses Projekt im Benutzerprofil im Bereich Jugend-Forscht Projekte hinzugefügt werden.'), 'error');
-        drupal_access_denied();
-        drupal_exit();
-
-    } else {
+    if (isset($node->nid)) {
+        global $user;
 
         $query = db_select('alumni_projects_access', 'apc');
         $query->fields('apc', array('user_id'));
         $query->condition('apc.node_id', $node->nid, '=');
         $query->condition('apc.user_id', $user->uid, '=');
-        $query->condition('apc.status', 0, '=');
 
         $result = $query->execute();
 
-        if ($result->fetchAssoc()) {
-            drupal_set_message(t('Der Projektmanager hat Ihr Konto für dieses Projekt noch nicht freigeschaltet.'), 'error');
+        if (!$result->fetchAssoc()) {
+            drupal_set_message(t('Sie sind nicht dem Team des Projektes zugeordnet. Nur Teammitglieder können Ihr Projekt bearbeiten. ' .
+                'Um Mitglied des Teams zu werden, muss dieses Projekt im Benutzerprofil im Bereich Jugend-Forscht Projekte hinzugefügt werden.'), 'error');
             drupal_access_denied();
             drupal_exit();
 
+        } else {
+
+            $query = db_select('alumni_projects_access', 'apc');
+            $query->fields('apc', array('user_id'));
+            $query->condition('apc.node_id', $node->nid, '=');
+            $query->condition('apc.user_id', $user->uid, '=');
+            $query->condition('apc.status', 0, '=');
+
+            $result = $query->execute();
+
+            if ($result->fetchAssoc()) {
+                drupal_set_message(t('Der Projektmanager hat Ihr Konto für dieses Projekt noch nicht freigeschaltet.'), 'error');
+                drupal_access_denied();
+                drupal_exit();
+
+            }
         }
     }
 
