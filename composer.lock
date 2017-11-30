@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "1aa58b62284e56d0eaade5c07c4a2429",
+    "content-hash": "ff53f9dd79687342fa945369258905d2",
     "packages": [
         {
             "name": "composer/installers",
@@ -501,6 +501,53 @@
             }
         },
         {
+            "name": "drupal/comment_delete",
+            "version": "1.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/comment_delete",
+                "reference": "7.x-1.2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/comment_delete-7.x-1.2.zip",
+                "reference": "7.x-1.2",
+                "shasum": "aafe1793125616fb344b72844712a08dd78bd8f4"
+            },
+            "require": {
+                "drupal/drupal": "*"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-1.x": "1.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-1.2",
+                    "datestamp": "1457368478",
+                    "security-coverage": {
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "robphillips",
+                    "homepage": "https://www.drupal.org/user/459772"
+                }
+            ],
+            "description": "Enhances user comment deletion capabilities.",
+            "homepage": "https://www.drupal.org/project/comment_delete",
+            "support": {
+                "source": "http://cgit.drupalcode.org/comment_delete"
+            }
+        },
+        {
             "name": "drupal/composer_autoloader",
             "version": "1.2.0",
             "source": {
@@ -550,6 +597,64 @@
             "support": {
                 "source": "http://cgit.drupalcode.org/composer_autoloader",
                 "issues": "http://drupal.org/project/issues/composer_autoloader"
+            }
+        },
+        {
+            "name": "drupal/content_access",
+            "version": "1.2.0-beta2",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/content_access",
+                "reference": "7.x-1.2-beta2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/content_access-7.x-1.2-beta2.zip",
+                "reference": "7.x-1.2-beta2",
+                "shasum": "c627e74e897fefcd68a8b64e6e05ad184c506863"
+            },
+            "require": {
+                "drupal/drupal": "~7.0"
+            },
+            "require-dev": {
+                "drupal/rules": "*"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-1.x": "1.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-1.2-beta2",
+                    "datestamp": "1366014322",
+                    "security-coverage": {
+                        "status": "not-covered",
+                        "message": "Project has not opted into security advisory coverage!"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "fago",
+                    "homepage": "https://www.drupal.org/user/16747"
+                },
+                {
+                    "name": "good_man",
+                    "homepage": "https://www.drupal.org/user/265439"
+                },
+                {
+                    "name": "id.tarzanych",
+                    "homepage": "https://www.drupal.org/user/2776543"
+                }
+            ],
+            "description": "Provides flexible content access control.",
+            "homepage": "https://www.drupal.org/project/content_access",
+            "support": {
+                "source": "http://cgit.drupalcode.org/content_access"
             }
         },
         {
