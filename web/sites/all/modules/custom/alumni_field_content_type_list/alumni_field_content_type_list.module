@@ -101,7 +101,7 @@ function alumni_field_content_type_list_field_widget_form(&$form, &$form_state, 
                 '#title' => $element['#title'],
                 '#description' => $element['#description'],
                 '#default_value' => $value,
-                '#empty_option' => t('- Keine -'),
+                '#empty_option' => SELECT_DEFAULT,
                 '#options' => $options,
                 '#required' => $element['#required'],
                 '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
@@ -131,10 +131,10 @@ function alumni_field_content_type_list_field_settings_form($field, $instance, $
 
     $form['content_type_list_select'] = array(
         '#type' => 'select',
-        '#title' => t('Systemname des Content Types für Interessen'),
+        '#title' => t('Systemname des Content Types'),
         '#options' => $options,
         '#default_value' => isset($settings['content_type_list_select']) ? $settings['content_type_list_select'] : '',
-        '#empty_option' => t('- Keine -'),
+        '#empty_option' => SELECT_DEFAULT,
         '#required' => TRUE,
     );
 

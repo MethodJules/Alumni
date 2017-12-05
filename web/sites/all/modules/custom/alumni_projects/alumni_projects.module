@@ -1,21 +1,13 @@
 <?php
 
 /**
- * Implements hook_node_update().
- */
-function alumni_projects_node_update($node)
-{
-    if ($node->type === 'projekte') {
-        setProjectManager($node);
-    }
-}
-
-/**
  * Implements hook_node_insert().
  */
 function alumni_projects_node_insert($node)
 {
-    if ($node->type === 'projekte') {
+    global $user;
+
+    if ($node->type === variable_get('aup_projects_content_type', '') && !user_has_role(3, user_load($user->uid))) {
         setProjectManager($node);
     }
 }
@@ -26,8 +18,12 @@ function alumni_projects_node_insert($node)
 function alumni_projects_node_prepare($node)
 {
 
-    if (isset($node->nid)) {
-        global $user;
+    global $user;
+
+    if (isset($node->nid) && $node->type === variable_get('aup_projects_content_type', '')
+        && !user_has_role(3, user_load($user->uid))) {
+
+        setProjectManager($node);
 
         $query = db_select('alumni_projects_access', 'apc');
         $query->fields('apc', array('user_id'));
@@ -35,6 +31,7 @@ function alumni_projects_node_prepare($node)
         $query->condition('apc.user_id', $user->uid, '=');
 
         $result = $query->execute();
+
 
         if (!$result->fetchAssoc()) {
             drupal_set_message(t('Sie sind nicht dem Team des Projektes zugeordnet. Nur Teammitglieder können Ihr Projekt bearbeiten. ' .
@@ -59,6 +56,45 @@ function alumni_projects_node_prepare($node)
 
             }
         }
+
+
+    }
+
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function alumni_projects_node_view($node, $view_mode, $langcode)
+{
+
+    if ($node->type === variable_get('aup_projects_content_type', '')) {
+
+        global $user;
+        $query = db_select('alumni_projects_access', 'apc');
+        $query->fields('apc', array('user_id'));
+        $query->condition('apc.node_id', $node->nid, '=');
+        $query->condition('apc.user_id', $user->uid, '=');
+        $query->condition('apc.manager', 1, '=');
+
+        $result = $query->execute();
+
+        if ($result->fetchAssoc()) {
+
+            $managementLink = base_path() . 'projects/user-management/' . $node->nid;
+
+            $markup =
+                '<div class="projectmanager-box">
+                <div>
+                    Du bist Projektmanager!<br>
+                    <a href="' . $managementLink . '">zur Mitgliederverwaltung</a>
+                </div>
+            </div>';
+
+            $node->content['project_manager_info']['#weight'] = -1;
+            $node->content['project_manager_info']['0']['#markup'] = $markup;
+        }
+
     }
 
 }
@@ -85,6 +121,7 @@ function setProjectManager($node) {
         if ($result->fetchAssoc()) {
             db_update('alumni_projects_access')
                 ->fields(array(
+                    'status' => 1,
                     'manager' => 1,
                 ))
                 ->condition('user_id', $user->uid, '=')
@@ -103,6 +140,7 @@ function setProjectManager($node) {
     }
 }
 
+
 //Funktion zum Erzeugen der intern Links für Drupal
 function alumni_projects_menu() {
 
@@ -113,8 +151,168 @@ function alumni_projects_menu() {
         db_create_table('alumni_projects_access', $schema['alumni_projects_access']);
     }
 
+    $items['projects/user-management/%node'] = array(
+        'title' => t('Projekt Mitgliederverwaltung'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('projects_user_management_form', 2),
+        'access callback' => 'user_is_logged_in',
+    );
+
     return $items;
 
+}
+
+
+function projects_user_management_form($form, $form_state, $node) {
+
+    global $user;
+
+    $query = db_select('alumni_projects_access', 'apc');
+    $query->fields('apc', array('user_id'));
+    $query->condition('apc.node_id', $node->nid, '=');
+    $query->condition('apc.user_id', $user->uid, '=');
+    $query->condition('apc.manager', 1, '=');
+
+    $result = $query->execute();
+
+    if (!$result->fetchAssoc()) {
+        drupal_access_denied();
+        drupal_exit();
+    }
+
+    $query = db_select('alumni_projects_access', 'apc');
+    $query->fields('apc', array('user_id', 'status', 'manager'));
+    $query->condition('apc.node_id', $node->nid, '=');
+
+    $result = $query->execute();
+
+    if ($result->rowCount() == 1) {
+        $form['no_result'] = array(
+            '#markup' => '<span>' . t('Keine Mitglieder bisher in diesem Projekt') . '</span>',
+        );
+    } else {
+
+        $form['users']['#tree'] = TRUE;
+
+
+        $markup =
+            '<table>
+                <tr>
+                    <th>' . t('Benutzer'). '</th>
+                    <th>' . t('Status') . '</th>
+                </tr>    
+            ';
+
+        $form['users']['table_start'] = array(
+            '#markup' => $markup,
+        );
+
+        $optionsManager = array();
+        $projectmanager = '';
+        $counter = 0;
+
+        foreach ($result as $data) {
+
+            $userLoad = user_load($data->user_id);
+
+            if ($data->status == 1) {
+                $optionsManager[$data->user_id] = $userLoad->name;
+            }
+
+            if ($data->manager == 1) {
+                $projectmanager = $data->user_id;
+            }
+
+            if ($data->manager == 0) {
+                $form['users'][$counter]['row_start'] = array(
+                    '#markup' => '<tr>',
+                );
+
+                $form['users'][$counter]['user_name'] = array(
+                    '#markup' => '<span>' . $userLoad->name . '</span>',
+                    '#prefix' => '<td>',
+                    '#suffix' => '</td>',
+                );
+
+                $options = array(
+                    0 => t('kein Mitglied'),
+                    1 => t('Mitglied'),
+                );
+
+                $form['users'][$counter]['user_status_select'] = array(
+                    '#type' => 'select',
+                    '#options' => $options,
+                    '#default_value' => $data->status,
+                    '#prefix' => '<td>',
+                    '#suffix' => '</td>',
+                );
+
+                $form['users'][$counter]['user_id'] = array(
+                    '#type' => 'hidden',
+                    '#value' => $data->user_id,
+                );
+
+                $form['users'][$counter]['row_end'] = array(
+                    '#markup' => '</tr>',
+                );
+
+                $counter++;
+            }
+        }
+
+        $form['users']['table_end'] = array(
+            '#markup' => '</table>',
+        );
+
+        $form['node_id'] = array(
+            '#type' => 'hidden',
+            '#value' => $node->nid,
+        );
+
+        $form['projectmanager_select'] = array(
+            '#title' => t('Projektmanager ändern'),
+            '#type' => 'select',
+            '#description' => t('Nur ein Benutzer kann Projektmanager sein. Wenn dieser geändert wird, hat der bisherige Projektmanager ' .
+                'keinen Zugriff mehr auf die Mitgliederverwaltung dieses Projektes.'),
+            '#options' => $optionsManager,
+            '#default_value' => $projectmanager,
+        );
+
+        $form['save_button'] = array(
+            '#type' => 'submit',
+            '#value' => t('Speichern'),
+        );
+
+    }
+
+    return $form;
+}
+
+function projects_user_management_form_submit($form, &$form_state) {
+    foreach ($form_state['values']['users'] as $value) {
+        db_update('alumni_projects_access')
+            ->fields(array(
+                'status' => $value['user_status_select'],
+            ))
+            ->condition('user_id', $value['user_id'], '=')
+            ->condition('node_id', $form_state['values']['node_id'], '=')
+            ->execute();
+    }
+
+    db_update('alumni_projects_access')
+        ->fields(array(
+            'manager' => 0,
+        ))
+        ->condition('node_id', $form_state['values']['node_id'], '=')
+        ->execute();
+
+    db_update('alumni_projects_access')
+        ->fields(array(
+            'manager' => 1,
+        ))
+        ->condition('user_id', $form_state['values']['projectmanager_select'], '=')
+        ->condition('node_id', $form_state['values']['node_id'], '=')
+        ->execute();
 }
 
 //Definieren des Arrays für die Datenbanktabellen und der Spalten

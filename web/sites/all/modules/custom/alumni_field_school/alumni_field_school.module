@@ -194,7 +194,7 @@ function alumni_field_school_field_settings_form($field, $instance, $has_data)
         '#title' => t('Inhaltstyp auswählen'),
         '#options' => $options,
         '#default_value' => isset($settings['content_type_select']) ? $settings['content_type_select'] : '',
-        '#empty_option' => t('- Keine -'),
+        '#empty_option' => SELECT_DEFAULT,
         '#required' => TRUE,
     );
 

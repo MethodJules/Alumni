@@ -1859,29 +1859,33 @@ div.warning {
 
 /*view-news*/
 
-.view-news .views-row{
+.view .views-row{
   overflow: hidden;
   margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
 }
 
-.view-news .views-row:last-child{
-  margin: 0;
-  padding: 0;
+.view .views-row:last-child{
+  //margin: 0;
+  //padding: 0;
 }
 
-.view-news p{
+.view .views-row .views-field:first-child {
+  font-size: 16px;
+}
+
+.view p{
   margin: 0;
 }
 
-.view-news .views-field-created{
+.view .views-field-created{
   font-weight: 600;
   font-size: 12px;
   color: #666;
 }
 
-.view-news .views-row.views-row-last{
+.view .views-row.views-row-last{
   border: 0;
 }
 
@@ -1903,3 +1907,13 @@ div.warning {
 	display: block;
 }
 
+/* JuFo Projectsites */
+.projectmanager-box {
+  margin: 10px 0 10px 0;
+  background-color: #b8e0f7;
+  border: 1px solid #569df5;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+}

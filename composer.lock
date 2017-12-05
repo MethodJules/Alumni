@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "ff53f9dd79687342fa945369258905d2",
+    "content-hash": "7c33a67cb14abbc430bcc71f8ce1206f",
     "packages": [
         {
             "name": "composer/installers",
@@ -1217,6 +1217,86 @@
             }
         },
         {
+            "name": "drupal/facetapi",
+            "version": "1.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/facetapi",
+                "reference": "7.x-1.5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/facetapi-7.x-1.5.zip",
+                "reference": "7.x-1.5",
+                "shasum": "0783e705d01d7275c7480dd5008a157124afe51d"
+            },
+            "require": {
+                "drupal/ctools": "*",
+                "drupal/drupal": "~7.0"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-1.x": "1.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-1.5",
+                    "datestamp": "1405685327",
+                    "security-coverage": {
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "Nick_vh",
+                    "homepage": "https://www.drupal.org/user/122682"
+                },
+                {
+                    "name": "borisson_",
+                    "homepage": "https://www.drupal.org/user/2393360"
+                },
+                {
+                    "name": "cpliakas",
+                    "homepage": "https://www.drupal.org/user/266779"
+                },
+                {
+                    "name": "dakku",
+                    "homepage": "https://www.drupal.org/user/97634"
+                },
+                {
+                    "name": "drumm",
+                    "homepage": "https://www.drupal.org/user/3064"
+                },
+                {
+                    "name": "eugene.ilyin",
+                    "homepage": "https://www.drupal.org/user/1767626"
+                },
+                {
+                    "name": "jurcello",
+                    "homepage": "https://www.drupal.org/user/774070"
+                },
+                {
+                    "name": "pwolanin",
+                    "homepage": "https://www.drupal.org/user/49851"
+                },
+                {
+                    "name": "voidberg",
+                    "homepage": "https://www.drupal.org/user/8662"
+                }
+            ],
+            "description": "An abstracted facet API that can be used by various search backends.",
+            "homepage": "https://www.drupal.org/project/facetapi",
+            "support": {
+                "source": "http://cgit.drupalcode.org/facetapi"
+            }
+        },
+        {
             "name": "drupal/feeds",
             "version": "dev-2.x",
             "source": {
@@ -2014,6 +2094,210 @@
             "homepage": "https://www.drupal.org/project/markup",
             "support": {
                 "source": "http://cgit.drupalcode.org/markup"
+            }
+        },
+        {
+            "name": "drupal/search_api",
+            "version": "1.22.0",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/search_api",
+                "reference": "7.x-1.22"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/search_api-7.x-1.22.zip",
+                "reference": "7.x-1.22",
+                "shasum": "9f6f1530383efae25c02dcce39763f0280b6bbad"
+            },
+            "require": {
+                "drupal/drupal": "~7.0",
+                "drupal/entity": "*"
+            },
+            "require-dev": {
+                "drupal/facetapi": "*",
+                "drupal/views": "*"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-1.x": "1.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-1.22",
+                    "datestamp": "1500368042",
+                    "security-coverage": {
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "Nick_vh",
+                    "homepage": "https://www.drupal.org/user/122682"
+                },
+                {
+                    "name": "drunken monkey",
+                    "homepage": "https://www.drupal.org/user/205582"
+                }
+            ],
+            "description": "Provides a generic API for modules offering search capabilities.",
+            "homepage": "https://www.drupal.org/project/search_api",
+            "support": {
+                "source": "http://cgit.drupalcode.org/search_api"
+            }
+        },
+        {
+            "name": "drupal/search_api_db",
+            "version": "1.6.0",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/search_api_db",
+                "reference": "7.x-1.6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/search_api_db-7.x-1.6.zip",
+                "reference": "7.x-1.6",
+                "shasum": "17413c19f6d3b9ab9f2e56a4b1876cbcf33b0305"
+            },
+            "require": {
+                "drupal/drupal": "~7.0",
+                "drupal/search_api": "*"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-1.x": "1.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-1.6",
+                    "datestamp": "1491404485",
+                    "security-coverage": {
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "drunken monkey",
+                    "homepage": "https://www.drupal.org/user/205582"
+                }
+            ],
+            "description": "Offers an implementation of the Search API that uses database tables for indexing content.",
+            "homepage": "https://www.drupal.org/project/search_api_db",
+            "support": {
+                "source": "http://cgit.drupalcode.org/search_api_db"
+            }
+        },
+        {
+            "name": "drupal/search_api_facetapi",
+            "version": "1.22.0",
+            "require": {
+                "drupal/drupal": "~7.0",
+                "drupal/facetapi": "*",
+                "drupal/search_api": "self.version"
+            },
+            "type": "metapackage",
+            "extra": {
+                "branch-alias": {
+                    "dev-1.x": "1.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-1.22",
+                    "datestamp": "1500368042",
+                    "security-coverage": {
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "Nick_vh",
+                    "homepage": "https://www.drupal.org/user/122682"
+                },
+                {
+                    "name": "drunken monkey",
+                    "homepage": "https://www.drupal.org/user/205582"
+                }
+            ],
+            "description": "Integrate the Search API with the Facet API to provide facetted searches.",
+            "homepage": "https://www.drupal.org/project/search_api",
+            "support": {
+                "source": "http://cgit.drupalcode.org/search_api"
+            }
+        },
+        {
+            "name": "drupal/search_api_ranges",
+            "version": "1.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/search_api_ranges",
+                "reference": "7.x-1.5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/search_api_ranges-7.x-1.5.zip",
+                "reference": "7.x-1.5",
+                "shasum": "c5bdf37f5ba83faee378b064bdf6362eb7104f17"
+            },
+            "require": {
+                "drupal/drupal": "~7.0",
+                "drupal/facetapi": "*",
+                "drupal/search_api": "*",
+                "drupal/search_api_facetapi": "*"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-1.x": "1.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-1.5",
+                    "datestamp": "1392554905",
+                    "security-coverage": {
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "Mathijs Koenraadt",
+                    "homepage": "https://www.drupal.org/user/214103"
+                },
+                {
+                    "name": "Scott Robertson",
+                    "homepage": "https://www.drupal.org/user/312263"
+                },
+                {
+                    "name": "jantoine",
+                    "homepage": "https://www.drupal.org/user/192192"
+                }
+            ],
+            "description": "Provides range widgets and a min/max slider for Search API.",
+            "homepage": "https://www.drupal.org/project/search_api_ranges",
+            "support": {
+                "source": "http://cgit.drupalcode.org/search_api_ranges"
             }
         },
         {

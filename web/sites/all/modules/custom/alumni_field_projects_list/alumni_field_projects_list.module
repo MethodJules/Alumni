@@ -1,0 +1,307 @@
+<?php
+
+
+/**
+ * Implements hook_field_info().
+ */
+function alumni_field_projects_list_field_info()
+{
+    return array(
+        'alumni_field_projects_list' => array(
+            'label' => t('Liste mit JuFo Projekten'),
+            'description' => t('Select Feld mit Auswahlliste für den Content Type von Projekten'),
+            'default_widget' => 'alumni_field_projects_list_widget',
+            'default_formatter' => 'alumni_field_projects_list_formatter',
+        ),
+    );
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function alumni_field_projects_list_field_is_empty($item, $field)
+{
+    $empty = FALSE;
+    if (empty($item['alumni_field_projects_area_select'])) {
+        $empty = TRUE;
+    }
+
+    if (empty($item['alumni_field_filtered_list'])) {
+        $empty = TRUE;
+    }
+
+    return $empty;
+
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function alumni_field_projects_list_field_formatter_info() {
+    return array(
+        'alumni_field_projects_list_formatter' => array(
+            'label' => t('Standard'),
+            'field types' => array('alumni_field_projects_list'),
+        ),
+    );
+}
+
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function alumni_field_projects_list_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display)
+{
+    $element = array();
+
+    switch ($display['type']) {
+        case 'alumni_field_projects_list_formatter':
+            foreach ($items as $delta => $item) {
+
+                $nid = $item['alumni_field_filtered_list'];
+                $query = db_select('node', 'n');
+                $query->fields('n', array('title'));
+                $query->condition('n.nid', $item['alumni_field_filtered_list'], '=');
+
+                $result = $query->execute();
+                $title = $result->fetchAssoc();
+                $element[$delta] = array(
+                    '#markup' => '<a href="' . base_path() . 'node/' . $nid . '">' . $title['title'] . '</a>',
+                );
+            }
+            break;
+    }
+
+    return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function alumni_field_projects_list_field_widget_info() {
+
+    return array(
+        'alumni_field_projects_list_widget' => array(
+            'label' => t('Auswahlliste'),
+            'field types' => array('alumni_field_projects_list'),
+        ),
+    );
+}
+
+
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
+{
+    switch ($instance['widget']['type']) {
+        case 'alumni_field_projects_list_widget':
+            $settings = $field['settings'];
+
+            $areaFieldInfo = field_info_field($settings['content_type_fields_select']);
+            $element['#type'] = 'fieldset';
+
+
+            $options = $areaFieldInfo['settings']['allowed_values'];
+            $element['alumni_field_projects_area_select'] = array(
+                '#type' => 'select',
+                '#title' => t('Fachbereich wählen'),
+                '#default_value' => isset($items[$delta]['alumni_field_projects_area_select']) ? $items[$delta]['alumni_field_projects_area_select'] : '',
+                '#empty_option' => SELECT_DEFAULT,
+                '#options' => $options,
+                '#required' => $element['#required'],
+                '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
+                '#delta' => $delta,
+                '#ajax' => array(
+                    'wrapper' => 'alumni-field-projects-list-' . $delta . '-wrapper',
+                    'callback' => 'select_area_callback',
+                    'method' => 'replace',
+                    'effect' => 'fade',
+                ),
+            );
+//dpm($settings['content_type_fields_select']);
+            $fieldName = $field['field_name'];
+
+            $options = array();
+
+            $area = '';
+
+            if (!empty($form_state['values'][$fieldName][$langcode][$delta]['alumni_field_projects_area_select'])) {
+                $area = $form_state['values'][$fieldName][$langcode][$delta]['alumni_field_projects_area_select'];
+            } else if (isset($items[$delta]['alumni_field_projects_area_select'])) {
+                $area = $items[$delta]['alumni_field_projects_area_select'];
+            }
+
+
+            if (!empty($area)) {
+
+                //$area = $form_state['values'][$fieldName][$langcode][$delta]['alumni_field_projects_area_select'];
+                $query = db_select('node', 'n');
+                $query->fields('n', array('title', 'nid'));
+                $query->join('field_data_' . $settings['content_type_fields_select'], 'fd', 'n.nid = fd.entity_id');
+                $query->condition('fd.' . $settings['content_type_fields_select'] . '_value', $area, '=');
+                $query->condition('n.status', 1, '=');
+
+                $result = $query->execute();
+
+                foreach ($result as $data) {
+                    $options[check_plain($data->nid)] = check_plain($data->title);
+                }
+            }
+
+            $element['alumni_field_filtered_list'] = array(
+                '#type' => 'select',
+                '#title' => t('Projekt wählen'),
+                '#description' => $element['#description'],
+                '#default_value' => isset($items[$delta]['alumni_field_filtered_list']) ? $items[$delta]['alumni_field_filtered_list'] : '',
+                '#empty_option' => SELECT_DEFAULT,
+                '#options' => $options,
+                '#required' => $element['#required'],
+                '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
+                '#delta' => $delta,
+                '#prefix' => '<div id="alumni-field-projects-list-' . $delta . '-wrapper">',
+                '#suffix' => '</div>',
+            );
+            break;
+    }
+
+    //dpm($form_state);
+    return $element;
+}
+
+function select_area_callback($form, &$form_state){
+
+    //dpm($form_state);
+    $form_state['rebuild'] = TRUE;
+    $parents = $form_state['triggering_element']['#array_parents'];
+    array_pop($parents);
+    $element = drupal_array_get_nested_value($form, $parents);
+    //dpm($element);
+    return $element['alumni_field_filtered_list'];
+}
+
+/**
+ * Implements hook_validate().
+ */
+/**
+ * Implements hook_field_validate().
+ */
+function alumni_field_projects_list_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
+{
+
+    global $user;
+    $projectsArray = array();
+
+    foreach ($items as $delta => $item) {
+        if (!empty($item['alumni_field_projects_area_select']) && !empty($item['alumni_field_filtered_list'])) {
+            $projectsArray[$item['alumni_field_filtered_list']] = $item['alumni_field_filtered_list'];
+
+            $query = db_select('alumni_projects_access', 'apc');
+            $query->fields('apc', array('user_id'));
+            $query->condition('apc.node_id', $item['alumni_field_filtered_list'], '=');
+            $query->condition('apc.user_id', $user->uid, '=');
+
+            $result = $query->execute();
+
+            if (!$result->fetchAssoc()) {
+                db_insert('alumni_projects_access')
+                    ->fields(array(
+                        'node_id' => $item['alumni_field_filtered_list'],
+                        'user_id' => $user->uid,
+                        'status' => 0,
+                        'manager' => 0,
+                    ))
+                    ->execute();
+            }
+        }
+    }
+
+    $query = db_select('alumni_projects_access', 'apc');
+    $query->fields('apc', array('node_id'));
+    $query->condition('apc.user_id', $user->uid, '=');
+
+    $result = $query->execute();
+
+    foreach ($result as $data) {
+        if (!array_key_exists($data->node_id, $projectsArray)) {
+            db_delete('alumni_projects_access')
+                ->condition('node_id', $data->node_id)
+                ->condition('user_id', $user->uid)
+                ->execute();
+        }
+    }
+
+
+}
+
+/**
+ * Implements hook_field_settings_form().
+ */
+function alumni_field_projects_list_field_settings_form($field, $instance, $has_data)
+{
+    $form = array();
+
+    $options = array();
+
+    $types = node_type_get_types();
+
+    foreach ($types as $type) {
+        $options[$type->type] = $type->type;
+    }
+
+    $settings = $field['settings'];
+
+    $form['content_type_select'] = array(
+        '#type' => 'select',
+        '#title' => t('Systemname des Content Types für Projekte'),
+        '#options' => $options,
+        '#default_value' => isset($settings['content_type_select']) ? $settings['content_type_select'] : '',
+        '#empty_option' => SELECT_DEFAULT,
+        '#required' => TRUE,
+        '#ajax' => array(
+            'wrapper' => 'content-type-fields-select-wrapper',
+            'callback' => 'select_content_type_callback',
+            'method' => 'replace',
+            'effect' => 'fade',
+        ),
+
+    );
+
+    $optionsFields = array();
+    if (!empty($settings['content_type_select'])) {
+        $fieldsArray = field_info_instances('node', $settings['content_type_select']);
+
+        foreach ($fieldsArray as $key => $value) {
+            $optionsFields[$key] = $key;
+        }
+    }
+
+    $form['content_type_fields_select'] = array(
+        '#type' => 'select',
+        '#title' => t('Auswahl des Feldes für Vorfilterung'),
+        '#description' => t('Der Benutzer muss zuerst den Bereich auswählen und bekommt anschließend nur Projekte, ' .
+            'denen der Inhalt des Bereichs im Projekt enthalten ist. Kann auch leer gelassen werden, wenn keine Vorfilterung definiert werden soll'),
+        '#options' => $optionsFields,
+        '#default_value' => isset($settings['content_type_fields_select']) ? $settings['content_type_fields_select'] : '',
+        '#empty_option' => SELECT_DEFAULT,
+        '#validated' => TRUE,
+        '#prefix' => '<div id="content-type-fields-select-wrapper">',
+        '#suffix' => '</div>',
+    );
+
+    return $form;
+}
+
+
+function select_content_type_callback(&$form, &$form_state){
+    $optionsFields = array();
+    $fieldsArray = field_info_instances('node', $form_state['values']['field']['settings']['content_type_select']);
+
+    foreach ($fieldsArray as $key => $value) {
+        $optionsFields[$key] = $key;
+    }
+
+    $form['field']['settings']['content_type_fields_select']['#options'] = $optionsFields;
+    return $form['field']['settings']['content_type_fields_select'];
+}

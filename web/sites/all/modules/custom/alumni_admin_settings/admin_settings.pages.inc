@@ -204,21 +204,6 @@ function profile_cv_form_validate($form, &$form_state) {
             form_set_error('file', t('Keine Datei wurde hochgeladen.'));
         }
     }
-    /*if (isset($form_state['values']['aup_cv_regular_font'])) {
-
-        $file = file_load($form_state['values']['aup_cv_regular_font']);
-        if ($file) {
-            $file->status = FILE_STATUS_PERMANENT;
-            file_save($file);
-            variable_set('aup_cv_regular_font_fid', $file->fid);
-        }
-    }
-    else {
-        $file = file_load(variable_get('aup_cv_regular_font_fid', ''));
-        if ($file->fid) {
-            file_delete($file, TRUE);
-        }
-    }*/
 }
 
 function profile_cv_form_submit($form, &$form_state) {
@@ -244,4 +229,30 @@ function profile_cv_form_submit($form, &$form_state) {
         //Variable löschen
         variable_del('aup_cv_bold_font_fid');
     }
+}
+
+function projects_settings_form($form, &$form_state) {
+    $options = array();
+
+    $types = node_type_get_types();
+
+    foreach ($types as $type) {
+        $options[$type->type] = $type->type;
+    }
+
+    $form['projects'] = array(
+        '#type'  => 'fieldset',
+        '#title' => t('Projekte Einstellungen'),
+    );
+
+    $form['projects']['aup_projects_content_type'] = array(
+        '#type' => 'select',
+        '#title' => t('Systemname des Content Types für Projekte'),
+        '#options' => $options,
+        '#empty_option' => SELECT_DEFAULT,
+        '#required' => TRUE,
+        '#default_value' => variable_get('aup_projects_content_type', ''),
+    );
+
+    return system_settings_form($form);
 }
