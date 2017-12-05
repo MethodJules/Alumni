@@ -1907,6 +1907,50 @@ div.warning {
 	display: block;
 }
 
+/* Slider View Frontpage */
+.views-slideshow-cycle-main-frame {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.view-slider-startseite .views-field-field-slider-info {
+  position: absolute;
+  top: 50px;
+  right: 0px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 18px;
+  padding: 5px;
+  color: #000;
+  width: 500px;
+}
+
+.views-slideshow-controls-bottom {
+  text-align: center;
+}
+
+.views-slideshow-pager-fields .views-field-counter {
+  display: inline-block;
+  background: url("../images/slider_inactive.png") top left no-repeat;
+  width: 16px;
+  height: 16px;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+.views-slideshow-pager-fields .active {
+  text-decoration: none;
+}
+
+.views-slideshow-pager-fields .active .views-field-counter {
+  background: url("../images/slider_active.png") top left no-repeat;
+  background-size: 16px;
+}
+
+.views-slideshow-pager-fields .views-content-counter {
+  display: none;
+}
+
 /* JuFo Projectsites */
 .projectmanager-box {
   margin: 10px 0 10px 0;
