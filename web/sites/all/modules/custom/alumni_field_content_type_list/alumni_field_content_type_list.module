@@ -89,6 +89,7 @@ function alumni_field_content_type_list_field_widget_form(&$form, &$form_state, 
             $query->fields('n', array('title'));
             $query->condition('n.type', $settings['content_type_list_select'], '=');
             $query->condition('n.status', 1, '=');
+            $query->orderBy('title', 'ASC');
 
             $result = $query->execute();
 
