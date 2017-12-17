@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "7c33a67cb14abbc430bcc71f8ce1206f",
+    "content-hash": "c311bb736e509aec0fcfa7deda01690a",
     "packages": [
         {
             "name": "composer/installers",
@@ -2578,6 +2578,69 @@
             "homepage": "https://www.drupal.org/project/views",
             "support": {
                 "source": "http://cgit.drupalcode.org/views"
+            }
+        },
+        {
+            "name": "drupal/views_slideshow",
+            "version": "3.9.0",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/views_slideshow",
+                "reference": "7.x-3.9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/views_slideshow-7.x-3.9.zip",
+                "reference": "7.x-3.9",
+                "shasum": "5679573cde4d3ecb181f41f5822549b146d15582"
+            },
+            "require": {
+                "drupal/drupal": "~7.0",
+                "drupal/views": "*"
+            },
+            "require-dev": {
+                "drupal/libraries": "*"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-3.x": "3.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-3.9",
+                    "datestamp": "1496893142",
+                    "security-coverage": {
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "NickWilde",
+                    "homepage": "https://www.drupal.org/user/3094661"
+                },
+                {
+                    "name": "aaron",
+                    "homepage": "https://www.drupal.org/user/33420"
+                },
+                {
+                    "name": "redndahead",
+                    "homepage": "https://www.drupal.org/user/160320"
+                },
+                {
+                    "name": "vbouchet",
+                    "homepage": "https://www.drupal.org/user/1671428"
+                }
+            ],
+            "description": "Provides a View style that displays rows as a jQuery slideshow.  This is an API and requires Views Slideshow Cycle or another module that supports the API.",
+            "homepage": "https://www.drupal.org/project/views_slideshow",
+            "support": {
+                "source": "http://cgit.drupalcode.org/views_slideshow"
             }
         },
         {

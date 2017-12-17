@@ -56,6 +56,7 @@
         "drupal/taxonomy_manager": "1.0",
         "drupal/token": "^1.7",
         "drupal/views": "^3.18",
+        "drupal/views_slideshow": "3.9",
         "drush/drush": "~8.0",
         "webflo/drupal-finder": "^1.0.0",
         "webmozart/path-util": "^2.3"
