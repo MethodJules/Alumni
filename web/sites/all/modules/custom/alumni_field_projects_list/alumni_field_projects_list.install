@@ -1,6 +1,6 @@
 <?php
 
-
+//Felder für die Datenbank definieren
 function alumni_field_projects_list_field_schema($field) {
     $schema = array();
     $schema['columns'] = array(

@@ -6,6 +6,7 @@
  */
 function alumni_field_projects_list_field_info()
 {
+    //Allgemeine Informationen zum Feld
     return array(
         'alumni_field_projects_list' => array(
             'label' => t('Liste mit JuFo Projekten'),
@@ -21,6 +22,8 @@ function alumni_field_projects_list_field_info()
  */
 function alumni_field_projects_list_field_is_empty($item, $field)
 {
+    //Überprüfen, ob in den beiden Feldern etwas drin steht. Wenn beide leer sind, dann sollen diese auch nicht in der
+    //Datenbank gespeichert werden
     $empty = FALSE;
     if (empty($item['alumni_field_projects_area_select'])) {
         $empty = TRUE;
@@ -38,6 +41,8 @@ function alumni_field_projects_list_field_is_empty($item, $field)
  * Implements hook_field_formatter_info().
  */
 function alumni_field_projects_list_field_formatter_info() {
+
+    //Definieren, welche Formatter es für die Anzeige gibt
     return array(
         'alumni_field_projects_list_formatter' => array(
             'label' => t('Standard'),
@@ -54,17 +59,24 @@ function alumni_field_projects_list_field_formatter_view($entity_type, $entity, 
 {
     $element = array();
 
+    //Für die einzelnen Formatter die Ausgabe für die Ansicht aufbauen
     switch ($display['type']) {
         case 'alumni_field_projects_list_formatter':
+            //Jedes gespeicherte Item mit den Informationen aus der Datenbank iterieren
             foreach ($items as $delta => $item) {
 
+                //Gespeicherte Node ID in Variable laden. Feld wird in der Widget Form definiert
                 $nid = $item['alumni_field_filtered_list'];
+
+                //Titel der Node aus der Datenbank laden
                 $query = db_select('node', 'n');
                 $query->fields('n', array('title'));
                 $query->condition('n.nid', $item['alumni_field_filtered_list'], '=');
 
                 $result = $query->execute();
                 $title = $result->fetchAssoc();
+
+                //Ausgabelink definieren
                 $element[$delta] = array(
                     '#markup' => '<a href="' . base_path() . 'node/' . $nid . '">' . $title['title'] . '</a>',
                 );
@@ -80,6 +92,7 @@ function alumni_field_projects_list_field_formatter_view($entity_type, $entity, 
  */
 function alumni_field_projects_list_field_widget_info() {
 
+    //Definieren, welche Widgets es für die Formulare geben soll
     return array(
         'alumni_field_projects_list_widget' => array(
             'label' => t('Auswahlliste'),
@@ -95,15 +108,24 @@ function alumni_field_projects_list_field_widget_info() {
  */
 function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
 {
+    //Hier werden für die Widgets die Formulare erzeugt, die beim Erstellen/Ändern eines Content Types gerendet werden
     switch ($instance['widget']['type']) {
         case 'alumni_field_projects_list_widget':
+
+            //Settings aus dem Array in Variable laden. Settings werden in der Settings Form definiert
             $settings = $field['settings'];
 
+            //Infos zum festgelegten Feld für die Vorfilterung (Fachbereich) laden
             $areaFieldInfo = field_info_field($settings['content_type_fields_select']);
+
+            //Definieren, dass es sich um ein Fieldset handelt. Wird bei einem Feld anders definiert, als die FormAPI es vorgibt
             $element['#type'] = 'fieldset';
 
-
+            //options für das Selectfeld sind die einzelnen Werte, die im Backend beim Content Type Projekte für das Feld der Vorfilterung eingetragen
+            //wurden. In diesem Fall die Liste der Fachbereiche.
             $options = $areaFieldInfo['settings']['allowed_values'];
+
+            //Selectfeld für die Vorfilterung definieren
             $element['alumni_field_projects_area_select'] = array(
                 '#type' => 'select',
                 '#title' => t('Fachbereich wählen'),
@@ -113,6 +135,8 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                 '#required' => $element['#required'],
                 '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
                 '#delta' => $delta,
+
+                //Ajax wrapper und Callback festlegen, der bei der Auswahl eines Fachbereichs aufgerufen wird
                 '#ajax' => array(
                     'wrapper' => 'alumni-field-projects-list-' . $delta . '-wrapper',
                     'callback' => 'select_area_callback',
@@ -121,35 +145,50 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                 ),
             );
 
-            $fieldName = $field['field_name'];
-
             $options = array();
 
+            //Feldname wird für die Überprüfung benötigt, ob in alumni_Field_projects_area_select etwas drin steht
+            $fieldName = $field['field_name'];
             $area = '';
 
+            /*
+             * Wenn die Callback-Funktion aufgerufen wird, wird die Widget Funktion quasi wieder aufgerufen, um die Form neu aufzubauen
+             * Hier überprüfen, ob eine Vorfilterung des Fachbereichs stattgefunden hat. Wenn ja dann sollen im nächsten Schritt
+             * nur die Projekte zum ausgewählten Fachbereich geladen werden
+             */
             if (!empty($form_state['values'][$fieldName][$langcode][$delta]['alumni_field_projects_area_select'])) {
                 $area = $form_state['values'][$fieldName][$langcode][$delta]['alumni_field_projects_area_select'];
             } else if (isset($items[$delta]['alumni_field_projects_area_select'])) {
+                //Wenn Items existieren, also Projekte in der Datenbank gespeichert werden, dann sollen in dem Bearbeitungsformular die
+                //bisherigen Daten aus der Datenbank angezeigt werden. Daher den gespeicherten Fachbereich auslesen und in Variable speichern
                 $area = $items[$delta]['alumni_field_projects_area_select'];
             }
 
-
+            /*
+             * Wenn der Fachbereich nicht leer ist, also entweder gerade die gespeicherten Daten aus der Datenbank im Bearbeitungsformular
+             * angezeigt werden sollen oder eine Vorfilterung des Fachbereichs im Selectfeld stattgefunden hat, sollen die dem Fachbereich
+             * zugeordeneten Projekte in das Selectfeld geladen werden
+             *
+             */
             if (!empty($area)) {
 
+                //Datenbankabfrage für die Projekte passend zum Fachbereich
                 $query = db_select('node', 'n');
                 $query->fields('n', array('title', 'nid'));
                 $query->join('field_data_' . $settings['content_type_fields_select'], 'fd', 'n.nid = fd.entity_id');
                 $query->condition('fd.' . $settings['content_type_fields_select'] . '_value', $area, '=');
-                $query->condition('n.status', 1, '=');
+                $query->condition('n.status', 1, '='); //nur veröffentliche Projekte
                 $query->orderBy('title', 'ASC');
 
                 $result = $query->execute();
 
+                //Options-Array für das Selectfeld der Projekte erstellen
                 foreach ($result as $data) {
                     $options[check_plain($data->nid)] = check_plain($data->title);
                 }
             }
 
+            //Selectfeld für die Projekte definieren
             $element['alumni_field_filtered_list'] = array(
                 '#type' => 'select',
                 '#title' => t('Projekt wählen'),
@@ -160,43 +199,56 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                 '#required' => $element['#required'],
                 '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
                 '#delta' => $delta,
+                //Um das Feld wird ein wrapper gelegt, der auch beim Ajax Bereich des Selectfelds für die Vorfilterung angegeben ist
+                //Dieser div-Container wird nach der Auswahl eines Fachbereichs und dem Laden der Projekte mit dem neu definierten Selectfeld
+                //überschrieben.
                 '#prefix' => '<div id="alumni-field-projects-list-' . $delta . '-wrapper">',
                 '#suffix' => '</div>',
             );
             break;
     }
 
-    //dpm($form_state);
     return $element;
 }
 
+//Callback Funktion für die Vorfilterung der Fachbereiche
 function select_area_callback($form, &$form_state){
 
-    //dpm($form_state);
+    //Bei Aufruf der Funktion wird die Form neu erstellt. Da die Struktur der Arrays etwas anders ist als bei Callback Funktionen in
+    //eigenen definierten Formularen, müssen hier aus dem form_state erst die Elternelemente des geklickten Elements ausgelesen werden.
+    //Im form Array muss von Elternteil zum Kindteil gegangen werden, bevor man zum eigentlichen Element alumni_field_filtered_list gelangt
     $form_state['rebuild'] = TRUE;
     $parents = $form_state['triggering_element']['#array_parents'];
     array_pop($parents);
     $element = drupal_array_get_nested_value($form, $parents);
-    //dpm($element);
+
+    //Von der neu erstellten Form das Feld alumni_field_filtered_list zurückgeben. Dieses Selectfeld wird dann mit dem im wrapper definiertem
+    //div-Container überschrieben
     return $element['alumni_field_filtered_list'];
 }
 
-/**
- * Implements hook_validate().
- */
 /**
  * Implements hook_field_validate().
  */
 function alumni_field_projects_list_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
 {
 
+    //Eingeloggten Benutzer laden
     global $user;
     $projectsArray = array();
 
+    //Beim Speichern soll der Benutzer bei den ausgewählten Projekten als Projektmiglied hinterlegt werden
+    //Alle ausgewählten Projekte, bzw. Items, iterieren
     foreach ($items as $delta => $item) {
+
+        //Nur die Items betrachten, bei denen sowohl ein Fachbereich und ein Projekt ausgewählt wurde
         if (!empty($item['alumni_field_projects_area_select']) && !empty($item['alumni_field_filtered_list'])) {
+
+            //Dem Array die Node IDs der Projekte hinzufügen. Wird für die Überprüfung benötigt, ob der Benutzer Projekte aus
+            //seinem Profil entfernt hat und die Projektzugehörigkeit ebenfalls entfernt werden soll
             $projectsArray[$item['alumni_field_filtered_list']] = $item['alumni_field_filtered_list'];
 
+            //In der Datenbank abfragen, ob der Benutzer bereits dem Projekt zugeordnet ist und wenn nicht den Benutzer hinzufügen
             $query = db_select('alumni_projects_access', 'apc');
             $query->fields('apc', array('user_id'));
             $query->condition('apc.node_id', $item['alumni_field_filtered_list'], '=');
@@ -217,12 +269,15 @@ function alumni_field_projects_list_field_validate($entity_type, $entity, $field
         }
     }
 
+    //Alle Projekte, bei denen der Benutzer als Mitglied hinterlegt ist, aus der Datenbank alden
     $query = db_select('alumni_projects_access', 'apc');
     $query->fields('apc', array('node_id'));
     $query->condition('apc.user_id', $user->uid, '=');
 
     $result = $query->execute();
 
+    //Überprüfen, ob der Benutzer eventuell Projekte aus seinem Nutzerprofil entfernt hat und wenn ja den Benutzer bei den
+    //entsprechenden Projekten entfernen.
     foreach ($result as $data) {
         if (!array_key_exists($data->node_id, $projectsArray)) {
             db_delete('alumni_projects_access')
@@ -240,18 +295,23 @@ function alumni_field_projects_list_field_validate($entity_type, $entity, $field
  */
 function alumni_field_projects_list_field_settings_form($field, $instance, $has_data)
 {
+
+    //Funktion definiert eine Form für Einstellungen bei der Erstellung eines Felds im Content Type
     $form = array();
 
     $options = array();
 
+    //Alle Node Type, bzw Content Types laden
     $types = node_type_get_types();
 
+    //options-Array für das Selectfeld aufbauen
     foreach ($types as $type) {
         $options[$type->type] = $type->type;
     }
 
     $settings = $field['settings'];
 
+    //Selectfeld für die Auswahl eines Content Types definieren
     $form['content_type_select'] = array(
         '#type' => 'select',
         '#title' => t('Systemname des Content Types für Projekte'),
@@ -259,6 +319,9 @@ function alumni_field_projects_list_field_settings_form($field, $instance, $has_
         '#default_value' => isset($settings['content_type_select']) ? $settings['content_type_select'] : '',
         '#empty_option' => SELECT_DEFAULT,
         '#required' => TRUE,
+        //Ajax mit wrapper und Callback festlegen. Callback wird beim Auswählen eines Content Types aufgerunfen und der div-Container
+        //mit dem wrapper als Klasse wird durch ein Selectfeld mit den Feldern (definieren welches Feld für die Vorfilterung des
+        //Fachbereichs verwendet werden soll) des Content Types ersetzt.
         '#ajax' => array(
             'wrapper' => 'content-type-fields-select-wrapper',
             'callback' => 'select_content_type_callback',
@@ -269,6 +332,9 @@ function alumni_field_projects_list_field_settings_form($field, $instance, $has_
     );
 
     $optionsFields = array();
+
+    //Beim Aufruf der Bearbeitungsform soll überprüft werden, ob in der Datenbank ein ausgewählter Content Type gespeichert wurde.
+    //Wenn ja, dann alle Felder des Content Types laden und das options-Array für das Selectfeld content_type_fields_select vorbereiten
     if (!empty($settings['content_type_select'])) {
         $fieldsArray = field_info_instances('node', $settings['content_type_select']);
 
@@ -277,6 +343,7 @@ function alumni_field_projects_list_field_settings_form($field, $instance, $has_
         }
     }
 
+    //Selectfeld mit Feldern des ausgewählten Content Types definieren
     $form['content_type_fields_select'] = array(
         '#type' => 'select',
         '#title' => t('Auswahl des Feldes für Vorfilterung'),
@@ -285,7 +352,12 @@ function alumni_field_projects_list_field_settings_form($field, $instance, $has_
         '#options' => $optionsFields,
         '#default_value' => isset($settings['content_type_fields_select']) ? $settings['content_type_fields_select'] : '',
         '#empty_option' => SELECT_DEFAULT,
+        //Da in der Callback-Funktion die options neu erstellt und dem Selectfeld zugewiesen werden, muss hier die Validierung übersprüngen
+        //werden, da es sonst zu einer Fehlermeldung kommt, da Drupal die definierten Optionen abspeichert und später validiert, dass beim
+        //Speichern auch ein gültiger Wert übergeben wurde. Normalerweise wird diese Validierung nicht übersprungen.
         '#validated' => TRUE,
+        //div-Container wird von der Ajax Funktion beim Selectfeld des Content Types nach Auswahl und laden der Felder des Content
+        //Types mit dem neu erstellten Selectfeld ersetzt
         '#prefix' => '<div id="content-type-fields-select-wrapper">',
         '#suffix' => '</div>',
     );
@@ -293,15 +365,24 @@ function alumni_field_projects_list_field_settings_form($field, $instance, $has_
     return $form;
 }
 
-
+//Callback-Funktion für die Auswahl eines Content Types
 function select_content_type_callback(&$form, &$form_state){
     $optionsFields = array();
+
+    //Da in der settings form nicht auf das form_state Array zugregriffen werden kann, in dem der ausgewählte Content Type steht,
+    //werden die Felder des Content Types in der Callback-Funktion geladen und im nachhinein dem Selectfeld zugewiesen.
+    //Normalerweise würde dies in der Funktion geschehen, die die Form neu aufbaut, aber in diesem Fall geht es nicht und daher muss
+    //bei dem Element, dass überschrieben werden soll, die Option #validated auf true stehen, da Drupal die definierten Optionen abspeichert
+    //und beim Speichern der settings form überprüft, ob ein gültigert Wert übermittelt wurde.
     $fieldsArray = field_info_instances('node', $form_state['values']['field']['settings']['content_type_select']);
 
+    //options-Array definieren
     foreach ($fieldsArray as $key => $value) {
         $optionsFields[$key] = $key;
     }
 
+    //Neue options dem Selectfeld content_type_fields_select übergeben und der alte Inhalt des Selectfelds wird von der Ajax Funktion
+    //mit dem neuen Selectfeld ersetzt.
     $form['field']['settings']['content_type_fields_select']['#options'] = $optionsFields;
     return $form['field']['settings']['content_type_fields_select'];
 }
