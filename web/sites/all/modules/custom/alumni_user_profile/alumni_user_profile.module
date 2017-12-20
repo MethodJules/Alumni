@@ -1,13 +1,14 @@
 <?php
 
+//Funktion durchsucht rekursiv das übergebene Array $value nach $key und ersetzt den HTML Code durch eigenen HTML Code
+//Ändert den HTML Link beim PDF Export Button im Lebenslauf zum genauen Link zum Lebenslauf mit der ID vom Benutzer
+//Bei dem Modul, dass den Button erzeugt, können keine dynamischen Links angegeben werden.
 function array_markup_replace(&$value, $key, $string) {
     $result = false;
 
     if (!is_object($value)) {
         if (is_array($value)) {
             foreach ($value as $k => &$v) {
-                //$result = $k === $key ? $v : array_key_search($v, $key);
-
                 if ($k === $key) {
                     $v[0]['#markup'] = $string;
                     break;
@@ -22,14 +23,15 @@ function array_markup_replace(&$value, $key, $string) {
     return $result;
 }
 
+//Funktion durchsucht rekursiv das übergebene Array $value nach $key und blendet das gefunden Element aus.
+//Blendet den PDF Export Button im Lebenslauf aus, wenn der HTML Code an die Exportfunktion übergeben wird
+//oder der Benutzer nicht autorisiert ist diesen Button zu sehen
 function array_search_hide(&$value, $key) {
     $result = false;
 
     if (!is_object($value)) {
         if (is_array($value)) {
             foreach ($value as $k => &$v) {
-                //$result = $k === $key ? $v : array_key_search($v, $key);
-
                 if ($k === $key) {
                     hide($v);
                     break;
@@ -50,14 +52,19 @@ function array_search_hide(&$value, $key) {
 function alumni_user_profile_user_view($account, $view_mode, $langcode)
 {
 
+    //Machine Name des PDF Export Buttons laden
     $PDFBtnMachineName = variable_get('aup_cv_export_pdf_machine_name', '');
     global $user;
 
+    //Wenn der Benutzer sein eigenes Profil betrachtet oder der Benutzer ein Administrator ist, wird der korrekte HTML Link
+    //zum Lebenslauf generiert und im content Array vom Account wird der Platzhalter Button für den Export durch den richtigen
+    //Button ersetzt.
     if ($account->uid == $user->uid || user_has_role(3, user_load($user->uid))) {
         $markupHTML = '<a class="btn button export-pdf-btn" target="_blank" href="' . base_path() . 'usercv/' . $account->uid . '/pdf">' . t('PDF exportieren') . '</a><div class="clear-float"></div>';
 
         array_markup_replace($account->content, $PDFBtnMachineName, $markupHTML);
     } else {
+        //Wenn der Benutzer den Button nicht sehen darf, dann wird dieser ausgeblendet
         array_search_hide($account->content, $PDFBtnMachineName);
     }
 }
@@ -69,6 +76,7 @@ function alumni_user_profile_user_view($account, $view_mode, $langcode)
 function alumni_user_profile_form_user_profile_form_alter(&$form, &$form_state, $form_id)
 {
 
+    //PDF Export Button in der Bearbeitungsform ausblenden. Wird dort nicht benötigt.
     $PDFBtnMachineName = variable_get('aup_cv_export_pdf_machine_name', '');
 
     array_search_hide($form, $PDFBtnMachineName);
@@ -127,17 +135,20 @@ function print_usercv($user_id) {
     //Autoloader von dompdf laden
     require_once 'sites/all/libraries/dompdf/autoload.inc.php';
 
+    //Array der Ansicht des Benutzerprofils laden
     $userView = user_view($userLoad);
 
     $cvMachineName = variable_get('aup_cv_machine_name');
 
-    //Lebenslauf anhand der ID laden
+    //Lebenslauf anhand des Machinename aus dem Array extrahieren
     $userCV = $userView[$cvMachineName];
 
+    //Machinename des PDF Export Buttons laden und den Button im Array ausblenden. Dieser soll im PDF nicht angezeigt werden
     $PDFBtnMachineName = variable_get('aup_cv_export_pdf_machine_name', '');
-
     array_search_hide($userCV, $PDFBtnMachineName);
 
+    //Regular Font und Bold Font laden, falls diese im Backend definiert wurden. Werden zwei Fonts verwendet, da Überschriften im Lebenslauf
+    //Bold sind und diese eine zusätzliche Font benötigen
     $fontPath = file_create_url('public://fonts') . '/';
     $regularFont = '';
     $boldFont = '';
@@ -158,7 +169,7 @@ function print_usercv($user_id) {
         }
     }
 
-    //Stylesheet laden, in HTML einbinden und das userCV Array renden
+    //Stylesheet laden, in HTML einbinden, zusätzlichen CSS Code für die Fonts und weiterer Formatierung definieren.
     $stylesheet = file_get_contents(drupal_get_path('theme', variable_get('aup_cv_theme_name', '')) . variable_get('aup_cv_theme_css_file', ''));
 
     $HTML = '<html>' .
@@ -213,6 +224,7 @@ function print_usercv($user_id) {
         '</style>' .
         '</head>' .
         '<body>' .
+        //Array in HTML Code rendern
         drupal_render($userCV).
         '</body>' .
         '</html>';
@@ -226,7 +238,6 @@ function print_usercv($user_id) {
 
     //HTML in dompdf laden
     $dompdf->loadHtml($HTML);
-
     $dompdf->setPaper('A4', 'portrait');
 
     //HTML als PDF rendern

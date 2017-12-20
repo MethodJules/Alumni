@@ -1,6 +1,6 @@
 <?php
 
-
+//Felder für Datenbank definieren
 function alumni_field_content_type_list_field_schema($field) {
     $schema = array();
     $schema['columns'] = array(

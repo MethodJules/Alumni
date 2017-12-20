@@ -21,6 +21,7 @@ function alumni_field_button_field_info()
  */
 function alumni_field_button_field_is_empty($item, $field)
 {
+    //Überprüfen, ob in dem Feld etwas drin steht. Wenn es leer ist, soll es auch nicht in der Datenbank gespeichert werden
     return empty($item['alumni_button']);
 }
 
@@ -28,6 +29,8 @@ function alumni_field_button_field_is_empty($item, $field)
  * Implements hook_field_formatter_info().
  */
 function alumni_field_button_field_formatter_info() {
+
+    //Zwei Formatter für die Anzeige definieren.
     return array(
         'alumni_button_default' => array(
             'label' => t('Edit form only'),
@@ -47,6 +50,8 @@ function alumni_field_button_field_formatter_info() {
  */
 function alumni_field_button_field_formatter_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items, $displays)
 {
+    //Da der Benutzer keine eigenen Informationen bei diesem Feld setzen kann, werden die angegebenen Informationen
+    //in den Einstellungen des Felds als items gespeichert, da diese ansonsten nicht in formatter_view zur Verfügung stehen
     if ($field['type'] == 'alumni_button') {
         foreach ($items as $eid => $item) {
             $items[$eid]['alumni_button'] = $field['settings']['button_url'];
@@ -62,9 +67,13 @@ function alumni_field_button_field_formatter_view($entity_type, $entity, $field,
     $element = array();
 
     switch ($display['type']) {
+        //Nur für button_view eine Ausgabe für die Anzeige erstellen, da der Button bei button_default nicht in der Anzeige
+        //erscheinen soll (Edit form only)
         case 'alumni_button_view':
             foreach ($items as $delta => $item) {
                 $settings = $field['settings'];
+
+                //Einstellungen zu neuer Tab, weitere Klassen und Stil der URL laden
                 $openStyle = $settings['url_open_style'] == 'new_tab' ? ' target="_blank"' : '';
                 $addClasses = isset($settings['additional_classes']) ? $settings['additional_classes'] : '';
                 $urlStyle = $settings['url_style'] == 'intern' ? base_path() : '';
@@ -83,11 +92,14 @@ function alumni_field_button_field_formatter_view($entity_type, $entity, $field,
  * Implements hook_field_widget_info().
  */
 function alumni_field_button_field_widget_info() {
+
+    //Widget festlegen
     return array(
         'alumni_button_widget' => array(
             'label' => t('Button'),
             'field types' => array('alumni_button'),
             'behaviors' => array(
+                //Nicht benötigte Einstellungen beim Erstellen (wie default Wert etc.) gar nicht erst anzeigen
                 'default value' => FIELD_BEHAVIOR_NONE,
             ),
         ),
@@ -101,9 +113,11 @@ function alumni_field_button_field_widget_info() {
  */
 function alumni_field_button_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
 {
+    //Form beim Bearbeiten oder Erstellen erzeugen. Da auch nur ein Button angezeigt werden soll, passiert das gleiche wie im Formatter
     switch ($instance['widget']['type']) {
         case 'alumni_button_widget':
             $settings = $field['settings'];
+            //Einstellungen zu neuer Tab, weitere Klassen und Stil der URL laden
             $openStyle = $settings['url_open_style'] == 'new_tab' ? ' target="_blank"' : '';
             $addClasses = isset($settings['additional_classes']) ? $settings['additional_classes'] : '';
             $urlStyle = $settings['url_style'] == 'intern' ? base_path() : '';
@@ -122,8 +136,11 @@ function alumni_field_button_field_widget_form(&$form, &$form_state, $field, $in
  */
 function alumni_field_button_field_settings_form($field, $instance, $has_data)
 {
+    //Settings Form erzeugen, die beim konfigurieren des Felds angezeigt wird.
     $form = array();
     $settings = $field['settings'];
+
+    //Feld für URL definieren
     $form['button_url'] = array(
         '#type' => 'textfield',
         '#title' => t('Link angeben'),
@@ -132,6 +149,7 @@ function alumni_field_button_field_settings_form($field, $instance, $has_data)
         '#description' => t('Internen oder externen Link angeben.'),
     );
 
+    //Feld für URL Stil definieren (externer oder interner Link)
     $form['url_style'] = array(
         '#type' => 'radios',
         '#title' => t('Art des Links'),
@@ -143,6 +161,7 @@ function alumni_field_button_field_settings_form($field, $instance, $has_data)
         '#required' => TRUE,
     );
 
+    //Feld für Art der Öffnung des Links erstellen (Standard, im neuen Tab)
     $form['url_open_style'] = array(
         '#type' => 'radios',
         '#title' => t('Öffnen des Links'),
@@ -154,6 +173,7 @@ function alumni_field_button_field_settings_form($field, $instance, $has_data)
         '#required' => TRUE,
     );
 
+    //Feld zum Angeben für weitere CSS Klassen definieren
     $form['additional_classes'] = array(
         '#type' => 'textfield',
         '#title' => t('Weitere CSS Klassen'),
@@ -169,8 +189,8 @@ function alumni_field_button_field_settings_form($field, $instance, $has_data)
  */
 function alumni_field_button_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id)
 {
+    //Kardinalitäten für das Feld verstecken und auf eins stellen. Sollen keine mehreren Felder oder unbegrenze Felder des Typs angegeben werden
     if ($form['#field']['type'] == 'alumni_button') {
-        // Hide the cardinality and set it to one.
         $form['field']['cardinality']['#type'] = 'hidden';
         $form['field']['cardinality']['#value'] = 1;
     }

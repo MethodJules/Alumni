@@ -6,18 +6,12 @@
  */
 function alumni_field_school_field_info()
 {
-    // Returning array.
+    //Allgemeine Informationen zum Feld
     return array(
-        // Which is called textf.
         'alumni_school' => array(
-            // Name of our type will be 'Te(x/s)t field'.
             'label' => t('Schule Autosuche'),
-            // Description of our type.
             'description' => t('Schule Autosuche für Alumnis'),
-            // Standart widget that will be dispalyed at once.
-            // after that we choose field type
             'default_widget' => 'alumni_school_widget',
-            // Standart that will be dispayed right after we choose field type.
             'default_formatter' => 'alumni_school_formatter',
         ),
     );
@@ -28,6 +22,7 @@ function alumni_field_school_field_info()
  */
 function alumni_field_school_field_is_empty($item, $field)
 {
+    //Überprüfen, ob in dem Feld etwas drin steht. Leer Felder sollen nicht in der Datenbank gespeichert werden
     return empty($item['alumni_school']);
 }
 
@@ -35,13 +30,10 @@ function alumni_field_school_field_is_empty($item, $field)
  * Implements hook_field_formatter_info().
  */
 function alumni_field_school_field_formatter_info() {
-    // Returning array.
+    //Formatter für die Anzeige definieren
     return array(
-        // Name of our format for code.
         'alumni_school_formatter' => array(
-            // Dispalyed name of format.
             'label' => t('Standard'),
-            // Field in DB with which our format will work.
             'field types' => array('alumni_school'),
         ),
     );
@@ -55,6 +47,7 @@ function alumni_field_school_field_formatter_view($entity_type, $entity, $field,
 {
     $element = array();
 
+    //Ausgabe für die Anzeige erstellen
     switch ($display['type']) {
         case 'alumni_school_formatter':
             foreach ($items as $delta => $item) {
@@ -72,13 +65,10 @@ function alumni_field_school_field_formatter_view($entity_type, $entity, $field,
  * Implements hook_field_widget_info().
  */
 function alumni_field_school_field_widget_info() {
-    // Returning massive.
+    //Widgets für die Bearbeitungsform definieren
     return array(
-        // With textf name.
         'alumni_school_widget' => array(
-            // Our widget will be named textf label.
             'label' => t('Textfeld Autocomplete'),
-            // Our widget will work with a field in DB under the name textf.
             'field types' => array('alumni_school'),
         ),
     );
@@ -92,41 +82,21 @@ function alumni_field_school_field_widget_info() {
 function alumni_field_school_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
 {
 
-    /*$query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'node')
-        ->entityCondition('bundle', $field['settings']['content_type_select']);
-    $nodes = $query->execute();
-
-    $nids = array();
-
-    foreach ($nodes['node'] as $node) {
-        array_push($nids, $node->nid);
-    }
-
-    dpm(node_load_multiple($nids));*/
-
+    //Widget für die Bearbeitungsform erstellen
     $value = isset($items[$delta]['alumni_school']) ? $items[$delta]['alumni_school'] : '';
     switch ($instance['widget']['type']) {
-        // If parameter case is 'textf'.
         case 'alumni_school_widget':
-            // Then we assign to textf element an array.
-            // With the following values.
+            //Textfeld für Auswahl einer Schule definieren. Das Textfeld verfügt über eine Autovervollständigung
             $element['alumni_school'] = array(
-                // Element type 'textfield'.
                 '#type' => 'textfield',
-                // Heading given in element settings.
                 '#title' => $element['#title'],
-                // Widget description is given in element settings.
                 '#description' => $element['#description'],
-                // Our widget will have standart value textfield.
                 '#default_value' => $value,
-                // If element is required it will be indicated in settings of the very element.
                 '#required' => $element['#required'],
+                //Pfad zur Autovervollständigung, die per Ajax aufgerufen werden kann. Name des Content Types als Parameter mit übergeben, damit die
+                //Suchfuntkion nur in Nodes des entsprechenden Content Types sucht
                 '#autocomplete_path'=>'visitedschools/autocomplete/' . $field['settings']['content_type_select'],
-                // Element location –
-                // If it's indicated, value should be used, if not, value is 0.
                 '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
-                // Line that we'll need for the output.
                 '#delta' => $delta,
             );
             break;
@@ -139,6 +109,7 @@ function alumni_field_school_field_widget_form(&$form, &$form_state, $field, $in
  */
 function alumni_field_school_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
 {
+    //Validierungfunktion, die überprüft, ob die angegebene Schule auch in den Nodes Content Types vorhanden ist. Andernfalls wird eine Fehlermeldung ausgegeben
     foreach ($items as $delta => $item) {
 
         if (!empty($item['alumni_school'])) {
@@ -164,6 +135,7 @@ function alumni_field_school_field_validate($entity_type, $entity, $field, $inst
  */
 function alumni_field_school_field_widget_error($element, $error, $form, &$form_state)
 {
+    //Fehlermeldung ausgeben, wenn es in der Validierungsfunktion zu einem Fehler kommt
     switch ($error['error']) {
         case 'alumni_school_invalid':
             form_error($element, $error['message']);
@@ -176,11 +148,11 @@ function alumni_field_school_field_widget_error($element, $error, $form, &$form_
  */
 function alumni_field_school_field_settings_form($field, $instance, $has_data)
 {
+    //Form für settings_form erstellen, die bei der Konfiguration des Feldes angezeigt wird.
     $form = array();
-
-
     $options = array();
 
+    //Alle Content Types laden und die Namen der Content Types im options Array für das Selectfeld speichern
     $types = node_type_get_types();
 
     foreach ($types as $type) {
@@ -189,6 +161,7 @@ function alumni_field_school_field_settings_form($field, $instance, $has_data)
 
     $settings = $field['settings'];
 
+    //Selectfeld zur Auswahl des Content Types
     $form['content_type_select'] = array(
         '#type' => 'select',
         '#title' => t('Inhaltstyp auswählen'),
@@ -201,13 +174,14 @@ function alumni_field_school_field_settings_form($field, $instance, $has_data)
     return $form;
 }
 
-//Funktion zum Erzeugen der intern Links für Drupal
+//Funktion zum Erzeugen des Links für die Autovervollständigung
 function alumni_field_school_menu() {
 
     $items['visitedschools/autocomplete/%'] = array(
         'title' => '',
         'description' => '',
         'page callback' => 'visited_schools_autocomplete',
+        //Definieren, wie viele Parameter übergeben werden
         'page arguments' => array(2),
         'access callback' => TRUE,
     );
@@ -216,26 +190,32 @@ function alumni_field_school_menu() {
 
 }
 
+//Funktion die per Ajax aufgerufen wird und für die Autovervollständigung die Daten in der Datenbank sucht
 function visited_schools_autocomplete($type, $string) {
 
+    //Eingegebenen String beim Leerzeichen aufsplitten, sodass nach jedem Wort einzeln gesucht werden kann
     $stringArr = preg_split('/ /', $string);
 
     $matches = array();
 
+    //Datenbankabfrage, um nach passenden Einträgen im entsprechenden Content Type zu suchen
     $query = db_select('node', 'n');
     $query->fields('n', array('title'));
     $query->condition('n.type', $type, '=');
     $query->condition('n.status', 1, '=');
 
+    //Wörter des aufgesplitteten Suchstrings als Condition hinzufügen. So ist die Reihenfolge der eingegebenen Wörter irrelevant bei der Suche
     foreach ($stringArr as $string) {
         if (!empty($string)) {
             $query->condition('n.title', '%' . db_like($string) . '%', 'LIKE');
         }
     }
 
+    //Maximal 10 Resultate
     $query->range(0, 10);
     $result = $query->execute();
 
+    //Gefundene Resultate im Array speichern und als JSON zurückgeben
     foreach ($result as $data) {
         $matches[check_plain($data -> title)] = check_plain($data -> title);
     }

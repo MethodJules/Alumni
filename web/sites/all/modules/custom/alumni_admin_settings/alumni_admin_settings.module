@@ -1,8 +1,9 @@
 <?php
 
+//Konstante definieren
 define('SELECT_DEFAULT', t('- Keine -'));
 
-//Funktion zum Erzeugen der intern Links für Drupal
+//Funktion zum Festlegen der Links im Backend
 function alumni_admin_settings_menu() {
 
     $items = array();

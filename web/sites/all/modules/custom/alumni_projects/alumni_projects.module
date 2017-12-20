@@ -7,6 +7,8 @@ function alumni_projects_node_insert($node)
 {
     global $user;
 
+    //Beim Hinzufügen eines Projekts, wenn es sich um den passenden Content Type handelt und der Benutzer kein Administrator ist, die Funktion setProjectManager
+    //aufrufen, in der überprüft wird, ob es bereits einen Projektmanager gibt und ggf. den aktuellen Benutzer als Projektmanager setzt.
     if ($node->type === variable_get('aup_projects_content_type', '') && !user_has_role(3, user_load($user->uid))) {
         setProjectManager($node);
     }
@@ -20,11 +22,14 @@ function alumni_projects_node_prepare($node)
 
     global $user;
 
+    //Beim bearbeiten eines Projekts, wenn es sich um den passenden Content Type handelt und der Benutzer kein Administrator ist, die Funktion setProjectManager
+    //aufrufen, in der überprüft wird, ob es bereits einen Projektmanager gibt und ggf. den aktuellen Benutzer als Projektmanager setzt.
     if (isset($node->nid) && $node->type === variable_get('aup_projects_content_type', '')
         && !user_has_role(3, user_load($user->uid))) {
 
         setProjectManager($node);
 
+        //Überprüfen, ob der aktuelle Benutzer dem Projekt in der Datenbank zugeordnet ist und ggf. eine Fehlermeldung ausgeben
         $query = db_select('alumni_projects_access', 'apc');
         $query->fields('apc', array('user_id'));
         $query->condition('apc.node_id', $node->nid, '=');
@@ -41,6 +46,7 @@ function alumni_projects_node_prepare($node)
 
         } else {
 
+            //Wenn der Benutzer dem Projekt bereits zugeordnet ist, überprüfen, ob der Projektmanager das Konto bereits freigeschaltet hat
             $query = db_select('alumni_projects_access', 'apc');
             $query->fields('apc', array('user_id'));
             $query->condition('apc.node_id', $node->nid, '=');
@@ -68,6 +74,8 @@ function alumni_projects_node_prepare($node)
 function alumni_projects_node_view($node, $view_mode, $langcode)
 {
 
+    //Wenn es sich um den Content Type Projekte handelt, soll auf der Ansichtsseite der Projekte für den Projektmanager eine zusätzliche Box
+    //angezeigt werden. In der Box wird ein Link zur Mitgliederverwaltung des Projekts angezeigt, die der Projektmanager aufrufen darf.
     if ($node->type === variable_get('aup_projects_content_type', '')) {
 
         global $user;
@@ -87,10 +95,11 @@ function alumni_projects_node_view($node, $view_mode, $langcode)
                 '<div class="projectmanager-box">
                 <div>
                     Du bist Projektmanager!<br>
-                    <a href="' . $managementLink . '">zur Mitgliederverwaltung</a>
+                    <a href="' . $managementLink . '">' . t('zur Mitgliederverwaltung') . '</a>
                 </div>
             </div>';
 
+            //Der Node die Box hinzufügen und die Gewichtung negativ setzen, damit die Box oberhalb des eigentlichen Inhalts des Projekts angezeigt wird
             $node->content['project_manager_info']['#weight'] = -1;
             $node->content['project_manager_info']['0']['#markup'] = $markup;
         }
@@ -99,6 +108,8 @@ function alumni_projects_node_view($node, $view_mode, $langcode)
 
 }
 
+
+//Funktion, die überprüft, ob es einen Projektmanager bereits gibt und ggf. den aktuellen Benutzer als Projektmanager setzt
 function setProjectManager($node) {
     $query = db_select('alumni_projects_access', 'apc');
     $query->fields('apc', array('user_id'));
@@ -118,6 +129,8 @@ function setProjectManager($node) {
 
         $result = $query->execute();
 
+        //Wenn es keinen Projektmanager bereits für das Projekt gibt, der Benutzer aber dem Projekt bereits zugeordnet ist über seine im
+        //Nutzerprofil angegebenen Projekte, wird der Eintrag in der Datenbank zu dem Benutzer geändert und dieser als Projektmanager gesetzt.
         if ($result->fetchAssoc()) {
             db_update('alumni_projects_access')
                 ->fields(array(
@@ -128,6 +141,7 @@ function setProjectManager($node) {
                 ->condition('node_id', $node->nid, '=')
                 ->execute();
         } else {
+            //Wurde der Benutzer dem Projekt noch gar nicht zugeordnet, den direkt als Projektmanager dem Projekt hinzufügen
             db_insert('alumni_projects_access')
                 ->fields(array(
                     'node_id' => $node->nid,
@@ -146,6 +160,7 @@ function alumni_projects_menu() {
 
     $items = array();
 
+    //Datenbanktabelle erzeugen, wenn diese noch nicht existiert.
     $schema = alumni_projects_dbschema();
     if(!db_table_exists('alumni_projects_access')) {
         db_create_table('alumni_projects_access', $schema['alumni_projects_access']);
@@ -162,11 +177,12 @@ function alumni_projects_menu() {
 
 }
 
-
+//Funktion zum Erstellen des Formulars für die Mitgliederverwaltung bei Projekten
 function projects_user_management_form($form, $form_state, $node) {
 
     global $user;
 
+    //Überprüfen, ob der aktuelle Benutzer Projektmanager für das Projekt ist und die Seite aufrufen darf
     $query = db_select('alumni_projects_access', 'apc');
     $query->fields('apc', array('user_id'));
     $query->condition('apc.node_id', $node->nid, '=');
@@ -180,18 +196,21 @@ function projects_user_management_form($form, $form_state, $node) {
         drupal_exit();
     }
 
+    //Zugeordnete Mitglieder zu dem Projekt laden
     $query = db_select('alumni_projects_access', 'apc');
     $query->fields('apc', array('user_id', 'status', 'manager'));
     $query->condition('apc.node_id', $node->nid, '=');
 
     $result = $query->execute();
 
+    //Wenn es keine Projektmitglieder bisher gibt, entsprechenden Meldung festlegen
     if ($result->rowCount() == 1) {
         $form['no_result'] = array(
             '#markup' => '<span>' . t('Keine Mitglieder bisher in diesem Projekt') . '</span>',
         );
     } else {
 
+        //Andernfalls eine Tabelle mit Projektmitgliedern generieren
         $form['users']['#tree'] = TRUE;
 
 
@@ -207,22 +226,32 @@ function projects_user_management_form($form, $form_state, $node) {
             '#markup' => $markup,
         );
 
+        //optionsManager mit Projektmitgliedern für das Selectfeld zum Ändern des Projektmanagers
         $optionsManager = array();
+
+        //Variable mit dem Projektmanager
         $projectmanager = '';
+
         $counter = 0;
 
+        //Alle Projektmitglieder aus der Datenbank iterieren
         foreach ($result as $data) {
 
+            //Benutzerobjekt laden
             $userLoad = user_load($data->user_id);
 
+            //Wenn der Benutzer bereits für das Projekt freigeschaltet wurde, wird er dem options Array hinzugefügt.
+            //Nur freigeschaltet Benutzer können als Projektmanager definiert werden
             if ($data->status == 1) {
                 $optionsManager[$data->user_id] = $userLoad->name;
             }
 
+            //Wenn der Benutzer Projektmanager ist, ihn in der Variable speichern. Wird für default_value des Selectfelds benötigt
             if ($data->manager == 1) {
                 $projectmanager = $data->user_id;
             }
 
+            //Wenn der Benutzer kein Manager ist, eine Zeile mit Daten zu dem Benutzer für die Tabelle erstellen
             if ($data->manager == 0) {
                 $form['users'][$counter]['row_start'] = array(
                     '#markup' => '<tr>',
@@ -242,7 +271,7 @@ function projects_user_management_form($form, $form_state, $node) {
                 $form['users'][$counter]['user_status_select'] = array(
                     '#type' => 'select',
                     '#options' => $options,
-                    '#default_value' => $data->status,
+                    '#default_value' => $data->status, //Je nachdem was in der Spalte status in der Datenbank steht, ist das Selectfeld mit "kein Mitglied" oder "Mitglied" vorbelegt
                     '#prefix' => '<td>',
                     '#suffix' => '</td>',
                 );
@@ -264,11 +293,13 @@ function projects_user_management_form($form, $form_state, $node) {
             '#markup' => '</table>',
         );
 
+        //Node ID als hidden Feld hinzufügen. Wird beim Speichern der Form benötigt.
         $form['node_id'] = array(
             '#type' => 'hidden',
             '#value' => $node->nid,
         );
 
+        //Selectfeld mit freigeschalteten Projektmitgliedern erzeugen, aktueller Projektmanager als default_value
         $form['projectmanager_select'] = array(
             '#title' => t('Projektmanager ändern'),
             '#type' => 'select',
@@ -288,7 +319,10 @@ function projects_user_management_form($form, $form_state, $node) {
     return $form;
 }
 
+//Funktion zum Speichern der Form
 function projects_user_management_form_submit($form, &$form_state) {
+
+    //Jedes Projektmitglied in der Tabelle iterieren und den status des Benutzers in der Datenbank atkualisieren
     foreach ($form_state['values']['users'] as $value) {
         db_update('alumni_projects_access')
             ->fields(array(
@@ -299,6 +333,7 @@ function projects_user_management_form_submit($form, &$form_state) {
             ->execute();
     }
 
+    //Bei allen Projektmitgliedern Spalte manager auf 0 setzen
     db_update('alumni_projects_access')
         ->fields(array(
             'manager' => 0,
@@ -306,6 +341,7 @@ function projects_user_management_form_submit($form, &$form_state) {
         ->condition('node_id', $form_state['values']['node_id'], '=')
         ->execute();
 
+    //Aktuellen Benutzer aus dem Selectfeld für den Projektmanager als Manager des Projekts setzen
     db_update('alumni_projects_access')
         ->fields(array(
             'manager' => 1,
