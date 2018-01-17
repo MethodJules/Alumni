@@ -34,6 +34,15 @@ function alumni_admin_settings_menu() {
         'file' => 'admin_settings.pages.inc',
     );
 
+    $items['admin/config/alumni/interests'] = array(
+        'title' => t('Interessen'),
+        'description' => t('Einstellungen für die Taxonomy Interessen.'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('interests_settings_form'),
+        'access arguments' => array('administer authentication'),
+        'file' => 'admin_settings.pages.inc',
+    );
+
     return $items;
 
 }

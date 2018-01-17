@@ -293,3 +293,62 @@ function projects_settings_form($form, &$form_state) {
     //system_settings_form erstellen, damit die Felder mit der Funktion variable_set automatisch gespeichert werden
     return system_settings_form($form);
 }
+
+function interests_settings_form($form, &$form_state) {
+
+    $options = array();
+
+    $vocabs = taxonomy_get_vocabularies();
+
+    foreach ($vocabs as $data) {
+        $options[$data->machine_name] = $data->machine_name;
+    }
+
+    $form['interests'] = array(
+        '#type'  => 'fieldset',
+        '#title' => t('Projekte Einstellungen'),
+    );
+
+    $form['interests']['aup_interests_taxonomy'] = array(
+        '#type' => 'select',
+        '#title' => t('Systemname der Taxonomy Liste für Interessen'),
+        '#description' => t('Wird für das Verwalten der Vorschläge zu Interessen im Backend benötigt.'),
+        '#options' => $options,
+        '#empty_option' => SELECT_DEFAULT,
+        '#required' => TRUE,
+        '#default_value' => variable_get('aup_interests_taxonomy', ''),
+    );
+
+    //Alle Felder in Drupal laden
+    $fields = field_info_fields();
+
+    $options = array();
+
+    //options Array für Selectfeld mit den vorhandenen Feldern in Drupal erstellen
+    foreach ($fields as $field) {
+        $options[$field['field_name']] = $field['field_name'];
+    }
+
+    $form['interests']['aud_interests_user'] = array(
+        '#type' => 'select',
+        '#title' => t('Systemname des Feldes Interessen beim Benutzerprofil'),
+        '#description' => t('Wird für die automatische Übereinstimmung zwischen Interessen des Benutzers und Stellenangeboten etc. benötigt.'),
+        '#options' => $options,
+        '#empty_option' => SELECT_DEFAULT,
+        '#required' => TRUE,
+        '#default_value' => variable_get('aud_interests_user', ''),
+    );
+
+    $form['interests']['aud_interests_job_offers'] = array(
+        '#type' => 'select',
+        '#title' => t('Systemname des Feldes Interessen beim Content Type für Stellenangebote'),
+        '#description' => t('Wird für die automatische Übereinstimmung zwischen Interessen des Benutzers und Stellenangeboten etc. benötigt.'),
+        '#options' => $options,
+        '#empty_option' => SELECT_DEFAULT,
+        '#required' => TRUE,
+        '#default_value' => variable_get('aud_interests_job_offers', ''),
+    );
+
+    //system_settings_form erstellen, damit die Felder mit der Funktion variable_set automatisch gespeichert werden
+    return system_settings_form($form);
+}

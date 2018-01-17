@@ -54,7 +54,9 @@
   	bottom: 10px;
   }
 
-
+  .front .slideshow{
+    min-height: 0;
+  }
 
 }
 
@@ -247,5 +249,12 @@
 
   .cv-column-placeholder {
     display: none;
+  }
+
+  /* Slider View Frontpage */
+  .view-slider-startseite .views-field-field-slider-info {
+    font-size: 12px;
+    top: 0;
+    width: 100%;
   }
 }

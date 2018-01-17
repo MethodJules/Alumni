@@ -1,0 +1,294 @@
+<?php
+
+function alumni_user_dashboard_menu() {
+
+    $items = array();
+
+    //Tabelle erstellen, falls diese nicht existeirts
+    $schema = alumni_user_dashboard_dbschema();
+    if(!db_table_exists('alumni_user_dashboard')) {
+        db_create_table('alumni_user_dashboard', $schema['alumni_user_dashboard']);
+    }
+
+    //Link für User Dashboard registrieren
+    $items['user-dashboard'] = array(
+        'title' => t('Dashboard'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('show_dashboard'),
+        'access callback' => 'user_is_logged_in',
+    );
+
+    //Link zum Speichern der individuellen Konfiguration des Dashboards eines Benutzers
+    $items['user-dashboard/config/save'] = array(
+        'page callback' => 'save_dashboard_config',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    return $items;
+
+}
+
+//Funktion, die per jQuery aufgerufen wird und die aktuelle Konfiguration des Benutzers vom Dashboard in der DB speichert
+function save_dashboard_config() {
+
+    global $user;
+    //Json String in ein Array umwandeln
+    $confArr = json_decode($_POST['content'], true);
+
+    //Alte Konfiguration des Benutzers in der Datenbank löschen
+    db_delete('alumni_user_dashboard')
+        ->condition('user_id', $user->uid, '=')
+        ->execute();
+
+    //Array iterieren und die Konfiguration der einzelnen Blöcke vom Dashboard der Tabelle hinzufügen
+    foreach ($confArr as $key => $value) {
+        db_insert('alumni_user_dashboard')
+            ->fields(array(
+                'user_id' => $user->uid,
+                'widget_name' => $key,
+                'active' => $value['itemActive'] == 'true' ? 1 : 0,
+                'position' => $value['itemPosition'],
+            ))
+            ->execute();
+    }
+
+    //Output definieren und als json String zurückgeben
+    $output = array('status' => 'okay');
+
+    drupal_json_output($output);
+    drupal_exit();
+}
+
+//Funktion zum Anzeigen des Dashboards
+function show_dashboard($form, &$form_state) {
+
+    //Variablen definieren
+    $form = array();
+    $widgetArr = array();
+    global $user;
+
+    //Variablen werden später überprüft und je nachdem bekommt die Checkbox einen Haken oder nicht
+    $jobOffersCheck = true;
+    $item2Check = true;
+    $item3Check = true;
+
+    //Im Adminbereich definierte Systemnamen der Felder von Interessen im Benutzerprofil und in den Stellenangeboten auslesen
+    //Diese werden zum joinen der Tabellen in der Datenbank benötigt, um die Einträge auszugeben, bei denen die Interessen übereinstimmen
+    $userInterestsField = variable_get('aud_interests_user');
+    $jobOffersInterestsField = variable_get('aud_interests_job_offers');
+
+    //Variable für Liste mit Stellenangeboten
+    $jobOffersListHtml = '';
+
+    //Datenbankquery zusammenbauen. Tabellen mit dem Interesse des Benutzers und dem Interesse aus dem Stellenangebot werden miteinander gejoined
+    //und die Tabelle node, damit alle Informationen für die passenden Stellenangebote im result zur Verfügung stehen
+    $query = db_select('field_data_' . $userInterestsField, 'u');
+    $query->distinct();
+    $query->join('field_data_' . $jobOffersInterestsField, 'jo', 'u.' . $userInterestsField . '_tid = jo.' . $jobOffersInterestsField . '_tid');
+    $query->join('node', 'n', 'jo.entity_id = n.nid'); //JOIN node with users
+    $query->fields('jo', array('entity_id'));
+    $query->fields('n', array('title', 'created', 'changed'));
+    $query->condition('u.entity_id', $user->uid,'=');
+    $query->condition('n.status', 1,'=');
+    $query->orderBy('created', 'DESC');
+    $query->range(0, 10);
+    $result = $query->execute();
+
+    //Wenn es keine übereinstimmenden Stellenangebote mit den Interessen des Benutzers gibt entsprechende Meldung festlegen
+    if ($result->rowCount() == 0) {
+        $jobOffersListHtml .= '<p>' . t('Keine für dich empfohlenen Stellenangebote stehen zur Verfügung. Eventuell die Interessen im Nutzerprofil überprüfen.') . '</p>';
+    } else {
+        //Alle Zeilen von result iterieren und der Variable ein widget-list-item mit jeweils einem passenden Stellenangebot hinzufügen
+        foreach ($result as $data) {
+            $jobOffersListHtml .= '
+                <div class="widget-list-item">
+                    <span class="item-title"><a href=" ' . base_path() . 'node/' . $data->entity_id . '" target="_blank">' . $data->title . '</a></span>
+                    <span class="item-others">' . date("d.m.Y - H:i", $data->created) . '</span>
+                </div>
+            ';
+        }
+    }
+
+    //Einstellungen der Blöcke des Benutzers für das Dashboard aus Tabelle laden
+    $query = db_select('alumni_user_dashboard', 'aud');
+    $query->fields('aud', array('widget_name', 'active', 'position'));
+    $query->condition('user_id', $user->uid,'=');
+    $query->orderBy('position', 'ASC');
+    $result = $query->execute();
+
+    //Wenn keine Einstellungen bisher vorgenommen werden, dann die Widgets quasi auf Standard setzen. Ein Widget ist jeweils ein Block im Dashboard
+    if ($result->rowCount() == 0) {
+        $widgetArr[0] = array(
+            'widget_name' => 'job-offers-item',
+        );
+
+        $widgetArr[1] = array(
+            'widget_name' => 'item2-item',
+        );
+
+        $widgetArr[2] = array(
+            'widget_name' => 'item3-item',
+        );
+    } else {
+        //Wenn ein Benutzer Einstellungen bereits gespeichert hat, alle Einstellungen der Widgets aus der Datenbank iterieren
+        //Je nachdem welche Position das Widget beim Speichern hatte, wird es beim entsprechenden Array-Index hinzugefügt.
+        //Somit muss später das Array nur noch von Anfang an durchlaufen werden, um die Widgets in der richtigen Reihenfolge auszugeben
+        foreach ($result as $data) {
+            $widgetArr[$data->position] = array(
+                'widget_name' => $data->widget_name,
+            );
+
+            //Überprüfen, ob die Widgets als active in der DB gespeichert wurden. Je nachdem wird die Variable gesetzt und das Widget
+            //wird später angezeigt oder ist ausgeblendet
+            if ($data->widget_name == 'job-offers-item' && $data->active == 0) {
+                $jobOffersCheck = false;
+            }
+
+            if ($data->widget_name == 'item2-item' && $data->active == 0) {
+                $item2Check = false;
+            }
+
+            if ($data->widget_name == 'item3-item' && $data->active == 0) {
+                $item3Check = false;
+            }
+
+        }
+
+    }
+
+    //Variablen für die Sichtbarkeit der Widgets setzen
+    $jobOffersVisibleHtml = $jobOffersCheck == true ? '' : ' style="display: none;"';
+    $item2VisibleHtml = $item2Check == true ? '' : ' style="display: none;"';
+    $item3VisibleHtml = $item3Check == true ? '' : ' style="display: none;"';
+
+    //Variablen für das Setzen der Haken bei den Checkboxen definieren
+    $jobOffersCheckHtml = $jobOffersCheck == true ? ' checked' : '';
+    $item2CheckHtml = $item2Check == true ? ' checked' : '';
+    $item3CheckHtml = $item3Check == true ? ' checked' : '';
+
+    //Die einzelnen Widget zusammenbauen. $jobOffersVisibleHtml gibt dabei an, ob das Widget überhaupt sichtbar ist
+    //Und in §jobOffersListHtml stehen die zum Benutzer passenden Stellenangebote. Die anderen Widgets sind analog aufgebaut.
+    $jobOffersItemHtml = '
+        <li class="widget-item" id="job-offers-item" check="job-offers-check"' . $jobOffersVisibleHtml . '>
+            <fieldset>
+                <legend><span class="fieldset-legend">' . t('Für dich empfohlene Stellenangebote') . '</span></legend>
+                <div class="fieldset-wrapper">' . $jobOffersListHtml . '</div>
+            </fieldset>
+        </li>
+    ';
+
+    $item2ItemHtml = '
+        <li class="widget-item" id="item2-item" check="item2-check"' . $item2VisibleHtml . '>
+            <fieldset>
+                <legend><span class="fieldset-legend">' . t('Für dich empfohlene Veranstaltungen') . '</span></legend>
+                <div class="fieldset-wrapper">Item 2</div>
+            </fieldset>
+        </li>
+    ';
+
+    $item3ItemHtml = '
+        <li class="widget-item" id="item3-item" check="item3-check"' . $item3VisibleHtml . '>
+            <fieldset>
+                <legend><span class="fieldset-legend">' . t('Für dich empfohlenes Sonstiges') . '</span></legend>
+                <div class="fieldset-wrapper">Item 3</div>
+            </fieldset>
+        </li>
+    ';
+
+    //Variable definieren. In dieser Variable steht der HTML Code von allen Widgets.
+    $widgetHtml = '';
+
+    //Das weiter oben definierte $widgetArr iterieren. Weiter oben wurden den Index-Positionen des Arrays die Namen der Widgets
+    //hinzugefügt. Nun werden alle Einträge iteriert und je nachdem, ob die Überprüfung des widget_name übereinstimmend ist
+    //wird der Variable der HTML Code des Widgets hinzugefügt. Somit stehen alle Widgets in der richtigen Reihenfolge in der Variablen
+    foreach ($widgetArr as $widget) {
+        if($widget['widget_name'] == 'job-offers-item') {
+            $widgetHtml .= $jobOffersItemHtml;
+        }
+
+        if($widget['widget_name'] == 'item2-item') {
+            $widgetHtml .= $item2ItemHtml;
+        }
+
+        if($widget['widget_name'] == 'item3-item') {
+            $widgetHtml .= $item3ItemHtml;
+        }
+    }
+
+    //HTML Code für die Ausgabe zusammenbauen
+    $html =
+        '
+        <div class="dashboard-list">
+            <div class="dashboard-config-block">
+                <span><b>' . t('Elemente anzeigen:') . '</b></span><br>
+                <div class="dashboard-config-list">
+                    <label class="check-dashboard-widgets"><input type="checkbox" id="job-offers-check" value="item1"' . $jobOffersCheckHtml . '>' . t('Stellenangebote') . '</label>
+                    <label class="check-dashboard-widgets"><input type="checkbox" id="item2-check" value="item2"' . $item2CheckHtml . '>Item 2</label>
+                    <label class="check-dashboard-widgets"><input type="checkbox" id="item3-check" value="item3"' . $item3CheckHtml . '>Item 3</label>
+                </div><br><br>
+                <a href="#" class="save-dashboard-config btn">Speichern</a>
+            </div>
+            <div class="edit-dashboard-config"></div>
+            <ul id="dashboard-sortable">
+            ' . $widgetHtml . '      
+            </ul>
+        </div>';
+
+    //Pfad des Moduls holen, damit die CSS und JS Dateien richtig eingebunden werden können
+    $path = drupal_get_path('module', 'alumni_user_dashboard');
+
+    //Markup Element mit den CSS und JS Dateien und dem eigentlichen HTML Code definieren
+    $form['user_dashboard'] = array(
+        '#markup' => $html,
+        '#attached' => array(
+            'library' => array(
+                array('system', 'ui.sortable'),
+            ),
+            'js' => array(
+                "$path/js/dashboard.js",
+                "$path/js/jquery.ui.touch-punch.min.js",
+            ),
+            'css' => array(
+                "$path/css/dashboard.css",
+            ),
+        ),
+    );
+
+    //$form zurückgeben, damit diese gerendert wird
+    return $form;
+}
+
+//Definieren des Arrays für die Datenbanktabellen und der Spalten
+function alumni_user_dashboard_dbschema()
+{
+    $schema = array();
+
+    $schema['alumni_user_dashboard'] = array(
+        'description' => 'The table for user dashboard',
+        'fields' => array(
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'widget_name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'active' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'position' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+        )
+    );
+
+    return $schema;
+}

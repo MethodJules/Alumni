@@ -1916,7 +1916,7 @@ div.warning {
 .view-slider-startseite .views-field-field-slider-info {
   position: absolute;
   top: 50px;
-  right: 0px;
+  right: 0;
   text-align: center;
   background: rgba(255, 255, 255, 0.7);
   font-size: 18px;

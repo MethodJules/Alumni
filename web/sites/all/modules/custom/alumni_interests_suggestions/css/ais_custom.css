@@ -1,0 +1,8 @@
+.left-floated-element {
+    float: left;
+    margin-right: 20px;
+}
+
+.clear-float {
+    clear: both;
+}

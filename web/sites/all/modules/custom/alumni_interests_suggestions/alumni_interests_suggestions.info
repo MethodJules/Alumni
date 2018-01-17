@@ -1,0 +1,6 @@
+name = Alumni Interests Suggestions
+description = Site for interests suggestions and backend to publish or delete suggestions
+core = 7.x
+package = Alumni Portal
+
+dependencies[] = alumni_admin_settings
