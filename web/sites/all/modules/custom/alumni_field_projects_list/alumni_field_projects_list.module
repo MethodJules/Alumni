@@ -10,7 +10,7 @@ function alumni_field_projects_list_field_info()
     return array(
         'alumni_field_projects_list' => array(
             'label' => t('Liste mit JuFo Projekten'),
-            'description' => t('Select Feld mit Auswahlliste für den Content Type von Projekten'),
+            'description' => t('Select Feld und Autosuche mit Auswahlliste für den Content Type von Projekten'),
             'default_widget' => 'alumni_field_projects_list_widget',
             'default_formatter' => 'alumni_field_projects_list_formatter',
         ),
@@ -22,19 +22,8 @@ function alumni_field_projects_list_field_info()
  */
 function alumni_field_projects_list_field_is_empty($item, $field)
 {
-    //Überprüfen, ob in den beiden Feldern etwas drin steht. Wenn beide leer sind, dann sollen diese auch nicht in der
-    //Datenbank gespeichert werden
-    $empty = FALSE;
-    if (empty($item['alumni_field_projects_area_select'])) {
-        $empty = TRUE;
-    }
 
-    if (empty($item['alumni_field_filtered_list'])) {
-        $empty = TRUE;
-    }
-
-    return $empty;
-
+    return empty($item['alumni_field_filtered_list']) && empty($item['alumni_field_autocomplete_list']);
 }
 
 /**
@@ -43,11 +32,15 @@ function alumni_field_projects_list_field_is_empty($item, $field)
 function alumni_field_projects_list_field_formatter_info() {
 
     //Definieren, welche Formatter es für die Anzeige gibt
+
+    // array für Suche nach Auswahl
+
     return array(
         'alumni_field_projects_list_formatter' => array(
             'label' => t('Standard'),
-            'field types' => array('alumni_field_projects_list'),
+            'field types' => array('alumni_field_projects_list')
         ),
+
     );
 }
 
@@ -66,12 +59,21 @@ function alumni_field_projects_list_field_formatter_view($entity_type, $entity, 
             foreach ($items as $delta => $item) {
 
                 //Gespeicherte Node ID in Variable laden. Feld wird in der Widget Form definiert
-                $nid = $item['alumni_field_filtered_list'];
+
+                $nid = 0;
+
+                if (!empty($item['alumni_field_filtered_list'])) {
+                    $nid = $item['alumni_field_filtered_list'];
+                }
+
+                if (!empty($item['alumni_field_autocomplete_list'])) {
+                    $nid = $item['alumni_field_autocomplete_list'];
+                }
 
                 //Titel der Node aus der Datenbank laden
                 $query = db_select('node', 'n');
                 $query->fields('n', array('title'));
-                $query->condition('n.nid', $item['alumni_field_filtered_list'], '=');
+                $query->condition('n.nid', $nid, '=');
 
                 $result = $query->execute();
                 $title = $result->fetchAssoc();
@@ -82,11 +84,10 @@ function alumni_field_projects_list_field_formatter_view($entity_type, $entity, 
                 );
             }
             break;
-    }
 
+    }
     return $element;
 }
-
 /**
  * Implements hook_field_widget_info().
  */
@@ -109,6 +110,7 @@ function alumni_field_projects_list_field_widget_info() {
 function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element)
 {
     //Hier werden für die Widgets die Formulare erzeugt, die beim Erstellen/Ändern eines Content Types gerendet werden
+
     switch ($instance['widget']['type']) {
         case 'alumni_field_projects_list_widget':
 
@@ -125,6 +127,17 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
             //wurden. In diesem Fall die Liste der Fachbereiche.
             $options = $areaFieldInfo['settings']['allowed_values'];
 
+            $value = '';
+            $visible = '';
+
+            if (!empty($items[$delta]['alumni_field_filtered_list'])) {
+                $value = $items[$delta]['alumni_field_filtered_list'];
+            }
+
+            if (isset($items[$delta]['alumni_field_active_list']) && $items[$delta]['alumni_field_active_list'] == 'autocomplete-list') {
+                $visible = 'display: none;';
+            }
+
             //Selectfeld für die Vorfilterung definieren
             $element['alumni_field_projects_area_select'] = array(
                 '#type' => 'select',
@@ -135,6 +148,7 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                 '#required' => $element['#required'],
                 '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
                 '#delta' => $delta,
+                '#prefix' => '<div class="normal-select-list" style="' . $visible . '">',
 
                 //Ajax wrapper und Callback festlegen, der bei der Auswahl eines Fachbereichs aufgerufen wird
                 '#ajax' => array(
@@ -144,6 +158,7 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                     'effect' => 'fade',
                 ),
             );
+
 
             $options = array();
 
@@ -193,7 +208,7 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                 '#type' => 'select',
                 '#title' => t('Projekt wählen'),
                 '#description' => $element['#description'],
-                '#default_value' => isset($items[$delta]['alumni_field_filtered_list']) ? $items[$delta]['alumni_field_filtered_list'] : '',
+                '#default_value' => $value,
                 '#empty_option' => SELECT_DEFAULT,
                 '#options' => $options,
                 '#required' => $element['#required'],
@@ -205,7 +220,60 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                 '#prefix' => '<div id="alumni-field-projects-list-' . $delta . '-wrapper">',
                 '#suffix' => '</div>',
             );
+
+            $element['change_to_autocomplete_list'] = array(
+                '#markup' => '<a href="#" class="change-to-autocomplete-list">' . t('Zur alternativen Suche mit Autovervollständigung') . '</a><br>',
+                '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
+                '#suffix' => '</div>',
+            );
+
+
+            $title = '';
+
+            if (!empty($items[$delta]['alumni_field_autocomplete_list'])) {
+                $query = db_select('node', 'n');
+                $query->fields('n', array('title'));
+                $query->condition('n.nid', $items[$delta]['alumni_field_autocomplete_list'], '=');
+                $result = $query->execute();
+
+                if ($result = $result->fetchAssoc()) {
+                    $title = $result;
+                }
+            }
+
+            $visible = '';
+            if (!isset($items[$delta]['alumni_field_active_list']) || $items[$delta]['alumni_field_active_list'] == 'normal-select-list') {
+                $visible = 'display: none;';
+            }
+
+            $element['alumni_field_autocomplete_list'] = array(
+                '#type' => 'textfield',
+                '#title' => $element['#title'],
+                '#description' => $element['#description'],
+                '#default_value' => $title,
+                '#required' => $element['#required'],
+                '#autocomplete_path' => 'visitedprojects/autocomplete/' . $field['settings']['content_type_select'],
+                '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
+                '#delta' => $delta,
+                '#prefix' => '<div class="autocomplete-list" style="' . $visible .'">',
+            );
+
+            $element['change_to_normal_select_list'] = array(
+                '#markup' => '<a href="#" class="change-to-normal-select-list">' . t('Zur Standard Suche mit Auswahlfeld') . '</a><br>',
+                '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
+                '#suffix' => '</div>',
+            );
+
+
+            $element['alumni_field_active_list'] = array(
+                '#type' => 'hidden',
+                '#default_value' => isset($items[$delta]['alumni_field_active_list']) ? $items[$delta]['alumni_field_active_list'] : 'normal-select-list',
+                '#prefix' => '<div class="active-list">',
+                '#suffix' => '</div>',
+            );
+
             break;
+
     }
 
     return $element;
@@ -228,6 +296,33 @@ function select_area_callback($form, &$form_state){
 }
 
 /**
+ * Implements hook_field_presave().
+ */
+function alumni_field_projects_list_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items)
+{
+    foreach ($items as $delta => $item) {
+        if ($item['alumni_field_active_list'] == 'normal-select-list'){
+            $items[$delta]['alumni_field_autocomplete_list'] = '';
+        }
+
+        if ($item['alumni_field_active_list'] == 'autocomplete-list') {
+            $items[$delta]['alumni_field_filtered_list'] = '';
+            $items[$delta]['alumni_field_projects_area_select'] = '';
+
+            $query = db_select('node', 'n');
+            $query->fields('n', array('nid'));
+            $query->condition('n.title', $item['alumni_field_autocomplete_list'], '=');
+            $result = $query->execute();
+
+            if ($result = $result->fetchAssoc()) {
+                $items[$delta]['alumni_field_autocomplete_list'] = $result;
+            }
+        }
+    }
+
+}
+
+/**
  * Implements hook_field_validate().
  */
 function alumni_field_projects_list_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
@@ -240,6 +335,10 @@ function alumni_field_projects_list_field_validate($entity_type, $entity, $field
     //Beim Speichern soll der Benutzer bei den ausgewählten Projekten als Projektmiglied hinterlegt werden
     //Alle ausgewählten Projekte, bzw. Items, iterieren
     foreach ($items as $delta => $item) {
+
+        if ($item['alumni_field_active_list'] == 'normal-select-list' && !empty($item['alumni_field_projects_area_select']) && !empty($item['alumni_field_filtered_list'])){
+            $item['alumni_field_project_nid'] = $item['alumni_field_filtered_list'];
+        }
 
         //Nur die Items betrachten, bei denen sowohl ein Fachbereich und ein Projekt ausgewählt wurde
         if (!empty($item['alumni_field_projects_area_select']) && !empty($item['alumni_field_filtered_list'])) {
@@ -267,9 +366,10 @@ function alumni_field_projects_list_field_validate($entity_type, $entity, $field
                     ->execute();
             }
         }
+
     }
 
-    //Alle Projekte, bei denen der Benutzer als Mitglied hinterlegt ist, aus der Datenbank alden
+    //Alle Projekte, bei denen der Benutzer als Mitglied hinterlegt ist, aus der Datenbank laden
     $query = db_select('alumni_projects_access', 'apc');
     $query->fields('apc', array('node_id'));
     $query->condition('apc.user_id', $user->uid, '=');
@@ -386,3 +486,60 @@ function select_content_type_callback(&$form, &$form_state){
     $form['field']['settings']['content_type_fields_select']['#options'] = $optionsFields;
     return $form['field']['settings']['content_type_fields_select'];
 }
+
+
+//Funktion zum Erzeugen der intern Links für Drupal
+function alumni_field_projects_list_menu() {
+
+    $items['visitedprojects/autocomplete/%'] = array(
+        'title' => '',
+        'description' => '',
+        'page callback' => 'visited_projects_autocomplete',
+        'page arguments' => array(2),
+        'access callback' => TRUE,
+    );
+
+    return $items;
+
+}
+
+// Autosuchen Funktion
+
+function visited_projects_autocomplete($type, $string) {
+
+    $stringArr = preg_split('/ /', $string);
+
+    $matches = array();
+
+    $query = db_select('node', 'n');
+    $query->fields('n', array('nid', 'title'));
+    $query->condition('n.type', $type, '=');
+    $query->condition('n.status', 1, '=');
+
+    foreach ($stringArr as $string) {
+        if (!empty($string)) {
+            $query->condition('n.title', '%' . db_like($string) . '%', 'LIKE');
+        }
+    }
+
+    $query->range(0, 10);
+    $result = $query->execute();
+
+    foreach ($result as $data) {
+        $matches[check_plain($data -> title)] = check_plain($data -> title);
+    }
+
+    drupal_json_output($matches);
+}
+/**
+    * Implements hook_field_widget_error().
+ */
+function alumni_field_project_field_widget_error($element, $error, $form, &$form_state)
+{
+    switch ($error['error']) {
+        case 'alumni_project_invalid':
+            form_error( $element, $error['message']);
+            break;
+    }
+}
+

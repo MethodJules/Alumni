@@ -319,6 +319,15 @@ function interests_settings_form($form, &$form_state) {
         '#default_value' => variable_get('aup_interests_taxonomy', ''),
     );
 
+    //system_settings_form erstellen, damit die Felder mit der Funktion variable_set automatisch gespeichert werden
+    return system_settings_form($form);
+}
+
+function dashboard_settings_form($form, &$form_state)
+{
+
+    $options = array();
+
     //Alle Felder in Drupal laden
     $fields = field_info_fields();
 
@@ -351,4 +360,5 @@ function interests_settings_form($form, &$form_state) {
 
     //system_settings_form erstellen, damit die Felder mit der Funktion variable_set automatisch gespeichert werden
     return system_settings_form($form);
+
 }

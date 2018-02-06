@@ -10,8 +10,16 @@ function alumni_field_projects_list_field_schema($field) {
         ),
         'alumni_field_filtered_list' => array(
             'type' => 'text',
-            'size' => 'medium',
+            'size' => 'medium'
         ),
+        'alumni_field_autocomplete_list' => array(
+            'type' => 'text',
+            'size' => 'medium'
+        ),
+        'alumni_field_active_list' => array(
+            'type' => 'text',
+            'size' => 'medium'
+        )
 
     );
 

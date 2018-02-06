@@ -25,6 +25,18 @@ function alumni_user_dashboard_menu() {
         'access callback' => 'user_is_logged_in',
     );
 
+    $items['user-dashboard/get/job-offers'] = array(
+        'page callback' => 'get_next_job_offers',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['user-dashboard/get/suggested-users'] = array(
+        'page callback' => 'get_next_suggested_users',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
     return $items;
 
 }
@@ -60,6 +72,62 @@ function save_dashboard_config() {
     drupal_exit();
 }
 
+function get_next_job_offers()
+{
+
+    global $user;
+    //Json String in ein Array umwandeln
+    $page = $_POST['page'];
+
+    $start = $page*10-10;
+    $end = $page*10+1;
+
+    $resArray = getJobOffersList($user->uid, $start, $end);
+
+    $html = '<div class="widget-job-offers">';
+    $html .= $resArray['list'];
+
+    if ($page != 1) {
+        $html .= '<a href="#" class="btn back-btn">' . t('Zurück') . '</a>';
+    }
+
+    if ($resArray['count'] > 10) {
+        $html .= '<a href="#" class="btn next-btn">' . t('Weiter') . '</a>';
+    }
+    $html .= '</div>';
+
+    drupal_json_output($html);
+    drupal_exit();
+}
+
+function get_next_suggested_users()
+{
+
+    global $user;
+    //Json String in ein Array umwandeln
+    $page = $_POST['page'];
+
+    $start = $page*10-10;
+    $end = $page*10+1;
+
+    $resArray = getSuggestedUsersList($user->uid, $start, $end);
+
+    $html = '<div class="widget-suggested-users">';
+    $html .= $resArray['list'];
+
+    if ($page != 1) {
+        $html .= '<a href="#" class="btn back-btn">' . t('Zurück') . '</a>';
+    }
+
+    if ($resArray['count'] > 10) {
+        $html .= '<a href="#" class="btn next-btn">' . t('Weiter') . '</a>';
+    }
+    $html .= '</div>';
+
+    drupal_json_output($html);
+    drupal_exit();
+}
+
 //Funktion zum Anzeigen des Dashboards
 function show_dashboard($form, &$form_state) {
 
@@ -68,47 +136,38 @@ function show_dashboard($form, &$form_state) {
     $widgetArr = array();
     global $user;
 
+    //Pfad des Moduls holen, damit die CSS und JS Dateien richtig eingebunden werden können
+    $path = drupal_get_path('module', 'alumni_user_dashboard');
+
     //Variablen werden später überprüft und je nachdem bekommt die Checkbox einen Haken oder nicht
     $jobOffersCheck = true;
-    $item2Check = true;
+    $suggestedUsersCheck = true;
     $item3Check = true;
 
-    //Im Adminbereich definierte Systemnamen der Felder von Interessen im Benutzerprofil und in den Stellenangeboten auslesen
-    //Diese werden zum joinen der Tabellen in der Datenbank benötigt, um die Einträge auszugeben, bei denen die Interessen übereinstimmen
-    $userInterestsField = variable_get('aud_interests_user');
-    $jobOffersInterestsField = variable_get('aud_interests_job_offers');
-
     //Variable für Liste mit Stellenangeboten
-    $jobOffersListHtml = '';
+    $jobOffersListHtml = '<div class="widget-job-offers">';
 
-    //Datenbankquery zusammenbauen. Tabellen mit dem Interesse des Benutzers und dem Interesse aus dem Stellenangebot werden miteinander gejoined
-    //und die Tabelle node, damit alle Informationen für die passenden Stellenangebote im result zur Verfügung stehen
-    $query = db_select('field_data_' . $userInterestsField, 'u');
-    $query->distinct();
-    $query->join('field_data_' . $jobOffersInterestsField, 'jo', 'u.' . $userInterestsField . '_tid = jo.' . $jobOffersInterestsField . '_tid');
-    $query->join('node', 'n', 'jo.entity_id = n.nid'); //JOIN node with users
-    $query->fields('jo', array('entity_id'));
-    $query->fields('n', array('title', 'created', 'changed'));
-    $query->condition('u.entity_id', $user->uid,'=');
-    $query->condition('n.status', 1,'=');
-    $query->orderBy('created', 'DESC');
-    $query->range(0, 10);
-    $result = $query->execute();
+    $resArray = getJobOffersList($user->uid, 0, 11);
+    $jobOffersListHtml .= $resArray['list'];
 
-    //Wenn es keine übereinstimmenden Stellenangebote mit den Interessen des Benutzers gibt entsprechende Meldung festlegen
-    if ($result->rowCount() == 0) {
-        $jobOffersListHtml .= '<p>' . t('Keine für dich empfohlenen Stellenangebote stehen zur Verfügung. Eventuell die Interessen im Nutzerprofil überprüfen.') . '</p>';
-    } else {
-        //Alle Zeilen von result iterieren und der Variable ein widget-list-item mit jeweils einem passenden Stellenangebot hinzufügen
-        foreach ($result as $data) {
-            $jobOffersListHtml .= '
-                <div class="widget-list-item">
-                    <span class="item-title"><a href=" ' . base_path() . 'node/' . $data->entity_id . '" target="_blank">' . $data->title . '</a></span>
-                    <span class="item-others">' . date("d.m.Y - H:i", $data->created) . '</span>
-                </div>
-            ';
-        }
+    if ($resArray['count'] > 10) {
+        $jobOffersListHtml .= '<a href="#" class="btn next-btn">' . t('Weiter') . '</a>';
     }
+
+    $jobOffersListHtml .= '</div>';
+
+
+    $suggestedUsersListHtml = '<div class="widget-suggested-users">';
+
+    $resArray = getSuggestedUsersList($user->uid, 0, 11);
+    $suggestedUsersListHtml .= $resArray['list'];
+
+    dpm($resArray['count']);
+    if ($resArray['count'] > 10) {
+        $suggestedUsersListHtml .= '<a href="#" class="btn next-btn">' . t('Weiter') . '</a>';
+    }
+
+    $suggestedUsersListHtml .= '</div>';
 
     //Einstellungen der Blöcke des Benutzers für das Dashboard aus Tabelle laden
     $query = db_select('alumni_user_dashboard', 'aud');
@@ -124,7 +183,7 @@ function show_dashboard($form, &$form_state) {
         );
 
         $widgetArr[1] = array(
-            'widget_name' => 'item2-item',
+            'widget_name' => 'suggested-users-item',
         );
 
         $widgetArr[2] = array(
@@ -145,8 +204,8 @@ function show_dashboard($form, &$form_state) {
                 $jobOffersCheck = false;
             }
 
-            if ($data->widget_name == 'item2-item' && $data->active == 0) {
-                $item2Check = false;
+            if ($data->widget_name == 'suggested-users-item' && $data->active == 0) {
+                $suggestedUsersCheck = false;
             }
 
             if ($data->widget_name == 'item3-item' && $data->active == 0) {
@@ -159,12 +218,12 @@ function show_dashboard($form, &$form_state) {
 
     //Variablen für die Sichtbarkeit der Widgets setzen
     $jobOffersVisibleHtml = $jobOffersCheck == true ? '' : ' style="display: none;"';
-    $item2VisibleHtml = $item2Check == true ? '' : ' style="display: none;"';
+    $suggestedUsersVisibleHtml = $suggestedUsersCheck == true ? '' : ' style="display: none;"';
     $item3VisibleHtml = $item3Check == true ? '' : ' style="display: none;"';
 
     //Variablen für das Setzen der Haken bei den Checkboxen definieren
     $jobOffersCheckHtml = $jobOffersCheck == true ? ' checked' : '';
-    $item2CheckHtml = $item2Check == true ? ' checked' : '';
+    $suggestedUsersCheckHtml = $suggestedUsersCheck == true ? ' checked' : '';
     $item3CheckHtml = $item3Check == true ? ' checked' : '';
 
     //Die einzelnen Widget zusammenbauen. $jobOffersVisibleHtml gibt dabei an, ob das Widget überhaupt sichtbar ist
@@ -178,11 +237,11 @@ function show_dashboard($form, &$form_state) {
         </li>
     ';
 
-    $item2ItemHtml = '
-        <li class="widget-item" id="item2-item" check="item2-check"' . $item2VisibleHtml . '>
+    $suggestedUsersItemHtml = '
+        <li class="widget-item" id="suggested-users-item" check="suggested-users-check"' . $suggestedUsersVisibleHtml . '>
             <fieldset>
-                <legend><span class="fieldset-legend">' . t('Für dich empfohlene Veranstaltungen') . '</span></legend>
-                <div class="fieldset-wrapper">Item 2</div>
+                <legend><span class="fieldset-legend">' . t('Benutzer mit gleichen Interessen') . '</span></legend>
+                <div class="fieldset-wrapper">' . $suggestedUsersListHtml . '</div>
             </fieldset>
         </li>
     ';
@@ -207,8 +266,8 @@ function show_dashboard($form, &$form_state) {
             $widgetHtml .= $jobOffersItemHtml;
         }
 
-        if($widget['widget_name'] == 'item2-item') {
-            $widgetHtml .= $item2ItemHtml;
+        if($widget['widget_name'] == 'suggested-users-item') {
+            $widgetHtml .= $suggestedUsersItemHtml;
         }
 
         if($widget['widget_name'] == 'item3-item') {
@@ -224,7 +283,7 @@ function show_dashboard($form, &$form_state) {
                 <span><b>' . t('Elemente anzeigen:') . '</b></span><br>
                 <div class="dashboard-config-list">
                     <label class="check-dashboard-widgets"><input type="checkbox" id="job-offers-check" value="item1"' . $jobOffersCheckHtml . '>' . t('Stellenangebote') . '</label>
-                    <label class="check-dashboard-widgets"><input type="checkbox" id="item2-check" value="item2"' . $item2CheckHtml . '>Item 2</label>
+                    <label class="check-dashboard-widgets"><input type="checkbox" id="suggested-users-check" value="item2"' . $suggestedUsersCheckHtml . '>' . t('Vorgeschlagene Benutzer') . '</label>
                     <label class="check-dashboard-widgets"><input type="checkbox" id="item3-check" value="item3"' . $item3CheckHtml . '>Item 3</label>
                 </div><br><br>
                 <a href="#" class="save-dashboard-config btn">Speichern</a>
@@ -234,9 +293,6 @@ function show_dashboard($form, &$form_state) {
             ' . $widgetHtml . '      
             </ul>
         </div>';
-
-    //Pfad des Moduls holen, damit die CSS und JS Dateien richtig eingebunden werden können
-    $path = drupal_get_path('module', 'alumni_user_dashboard');
 
     //Markup Element mit den CSS und JS Dateien und dem eigentlichen HTML Code definieren
     $form['user_dashboard'] = array(
@@ -257,6 +313,127 @@ function show_dashboard($form, &$form_state) {
 
     //$form zurückgeben, damit diese gerendert wird
     return $form;
+}
+
+function getJobOffersList($user_id, $start, $end) {
+
+    //Im Adminbereich definierte Systemnamen der Felder von Interessen im Benutzerprofil und in den Stellenangeboten auslesen
+    //Diese werden zum joinen der Tabellen in der Datenbank benötigt, um die Einträge auszugeben, bei denen die Interessen übereinstimmen
+    $userInterestsField = variable_get('aud_interests_user');
+    $jobOffersInterestsField = variable_get('aud_interests_job_offers');
+
+    $jobOffersListHtml = '';
+
+    //Datenbankquery zusammenbauen. Tabellen mit dem Interesse des Benutzers und dem Interesse aus dem Stellenangebot werden miteinander gejoined
+    //und die Tabelle node, damit alle Informationen für die passenden Stellenangebote im result zur Verfügung stehen
+    $query = db_select('field_data_' . $userInterestsField, 'u');
+    $query->distinct();
+    $query->join('field_data_' . $jobOffersInterestsField, 'jo', 'u.' . $userInterestsField . '_tid = jo.' . $jobOffersInterestsField . '_tid');
+    $query->join('node', 'n', 'jo.entity_id = n.nid');
+    $query->fields('jo', array('entity_id'));
+    $query->fields('n', array('title', 'created', 'changed'));
+    $query->condition('u.entity_id', $user_id,'=');
+    $query->condition('n.status', 1,'=');
+    $query->orderBy('created', 'DESC');
+    $query->range($start, $end);
+    $result = $query->execute();
+
+    $resArray = array(
+        'count' => $result->rowCount(),
+    );
+
+    //Wenn es keine übereinstimmenden Stellenangebote mit den Interessen des Benutzers gibt entsprechende Meldung festlegen
+    if ($result->rowCount() == 0) {
+        $jobOffersListHtml .= '<p>' . t('Keine für dich empfohlenen Stellenangebote stehen zur Verfügung. Eventuell die Interessen im Nutzerprofil überprüfen.') . '</p>';
+    } else {
+
+        $counter = 1;
+        //Alle Zeilen von result iterieren und der Variable ein widget-list-item mit jeweils einem passenden Stellenangebot hinzufügen
+        foreach ($result as $data) {
+            $jobOffersListHtml .= '
+                <div class="widget-list-item">
+                    <div class="item-title"><a href=" ' . base_path() . 'node/' . $data->entity_id . '" target="_blank">' . $data->title . '</a></div>
+                    <div class="item-others"><b>' . t('Erstellt am:') . ' </b>' . date("d.m.Y - H:i", $data->created) . '</div>
+                </div>
+            ';
+
+            $counter++;
+            if ($counter > 10) {break;}
+        }
+
+
+    }
+
+    $resArray['list'] = $jobOffersListHtml;
+    return $resArray;
+}
+
+
+function getSuggestedUsersList($user_id, $start, $end) {
+    $suggestedUsersListHtml = '';
+
+    //Im Adminbereich definierte Systemnamen der Felder von Interessen im Benutzerprofil und in den Stellenangeboten auslesen
+    //Diese werden zum joinen der Tabellen in der Datenbank benötigt, um die Einträge auszugeben, bei denen die Interessen übereinstimmen
+    $userInterestsField = variable_get('aud_interests_user');
+
+    //Pfad des Moduls holen, damit die CSS und JS Dateien richtig eingebunden werden können
+    $path = drupal_get_path('module', 'alumni_user_dashboard');
+
+    $subQuery = db_select('field_data_' . $userInterestsField, 'u2');
+    $subQuery->fields('u2', array($userInterestsField . '_tid'));
+    $subQuery->condition('u2.entity_id', $user_id, '=');
+
+    $subQuery2 = db_select('user_relationships', 'ur');
+    $subQuery2->fields('ur', array('requestee_id'));
+    $subQuery2->condition('ur.requester_id', $user_id, '=');
+
+    $query = db_select('field_data_' . $userInterestsField, 'u');
+    $query->distinct();
+    $query->join('users', 'us', 'u.entity_id = us.uid');
+    $query->fields('u', array('entity_id'));
+    $query->fields('us', array('name'));
+    $query->condition('u.'. $userInterestsField . '_tid', $subQuery,'IN');
+    $query->condition('u.entity_id', $subQuery2,'NOT IN');
+    $query->condition('u.entity_id', $user_id,'!=');
+    $query->orderBy('entity_id', 'DESC');
+    $query->range($start, $end);
+    $result = $query->execute();
+
+    $resArray = array(
+        'count' => $result->rowCount(),
+    );
+
+    if ($result->rowCount() == 0) {
+        $suggestedUsersListHtml .= '<p>' . t('Keine Benutzer mit gleichen Interessen gefunden.') . '</p>';
+    } else {
+
+        $counter = 1;
+        foreach ($result as $data) {
+
+            $loadUser = user_load($data->entity_id);
+
+            $pictureLink = '';
+            if (is_object($loadUser->picture)) {
+                $pictureLink = file_create_url($loadUser->picture->uri);
+            } else {
+                $pictureLink = $path . '/images/no_pic.jpg';
+            }
+
+            $suggestedUsersListHtml .= '
+                <div class="widget-list-item">                                        
+                    <div class="item-picture"><img src="' . $pictureLink . '" width="50px"></div>
+                    <div class="item-name"><a href=" ' . base_path() . 'user/' . $data->entity_id . '" target="_blank">' . $data->name . '</a></div>
+                </div>
+            ';
+
+            $counter++;
+            if ($counter > 10) {break;}
+        }
+
+    }
+
+    $resArray['list'] = $suggestedUsersListHtml;
+    return $resArray;
 }
 
 //Definieren des Arrays für die Datenbanktabellen und der Spalten

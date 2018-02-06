@@ -2,3 +2,5 @@ name = Alumni Field for "Jugend-Forscht" projects
 description = Select with content type list for fields and prefilter function for projects
 core = 7.x
 package = Alumni Portal
+
+scripts[] = js/projects.js
