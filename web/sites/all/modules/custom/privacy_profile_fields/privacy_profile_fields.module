@@ -1,0 +1,263 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function privacy_profile_fields_menu()
+{
+    $schema = privacy_profile_fields_dbschema();
+    if(!db_table_exists('privacy_profile_fields')) {
+        db_create_table('privacy_profile_fields', $schema['privacy_profile_fields']);
+    }
+
+    if(!db_table_exists('privacy_profile_fields_other_settings')) {
+        db_create_table('privacy_profile_fields_other_settings', $schema['privacy_profile_fields_other_settings']);
+    }
+
+    $items = array();
+
+    $items['privacyprofile/config/save'] = array(
+        'page callback' => 'save_user_privacy',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['admin/config/alumni/privacy'] = array(
+        'title' => t('Datenschutz'),
+        'description' => t('Einstellungen für den Datenschutz im Benutzerprofil.'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('privacy_settings_form'),
+        'access arguments' => array('administer authentication'),
+        'file' => 'privacy_admin_settings.pages.inc',
+    );
+
+    return $items;
+}
+
+function save_user_privacy()
+{
+    //Json String in ein Array umwandeln
+    $confArr = json_decode($_POST['config'], true);
+    $user_id= $_POST['userid'];
+
+    db_delete('privacy_profile_fields')
+        ->condition('user_id', $user_id, '=')
+        ->execute();
+
+    foreach ($confArr['privacy_fields'] as $key => $value) {
+        db_insert('privacy_profile_fields')
+            ->fields(array(
+                'user_id' => $user_id,
+                'field_name' => $key,
+                'privacy' => $value,
+            ))
+            ->execute();
+    }
+
+    db_delete('privacy_profile_fields_other_settings')
+        ->condition('user_id', $user_id, '=')
+        ->execute();
+
+    foreach ($confArr['privacy_others'] as $key => $value) {
+        db_insert('privacy_profile_fields_other_settings')
+            ->fields(array(
+                'user_id' => $user_id,
+                'field_name' => $key,
+                'privacy' => $value == true ? 1 : 0,
+            ))
+            ->execute();
+    }
+
+}
+
+function get_field_settings($user_id)
+{
+
+    $userLoad = user_load($user_id);
+
+    $fieldConf = array();
+    $query = db_select('privacy_profile_fields', 'ppf');
+    $query->fields('ppf', array('field_name', 'privacy'));
+    $query->condition('user_id', $user_id,'=');
+    $result = $query->execute();
+
+    foreach ($result as $data) {
+        $fieldConf[$data->field_name] = $data->privacy;
+    }
+
+    $userPrivacyFields = array();
+
+    foreach ($userLoad as $key => $value) {
+        if (strpos($key, variable_get('aup_prefix_privacy_fields', '')) !== false) {
+            $fieldInfo = field_info_field($key);
+
+            if (isset($fieldInfo['settings']['field_privacy']) && $fieldInfo['settings']['field_privacy'] == 1) {
+
+                $html = '<div class="privacy-field-container" id="' . str_replace('_', '-', $key) . '">
+                        <select class="form-select">
+                        <option value="public">' . t('Öffentlich') . '</option>
+                        <option value="friends">' . t('Freunde') . '</option>
+                        <option value="private">' . t('Nur ich') . '</option>
+                        </select>
+                        </div>';
+
+                $userPrivacyFields[$key] = array(
+                    'status' => isset($fieldConf[$key]) ? $fieldConf[$key] : 'none',
+                    'content' => $html,
+                );
+            }
+        }
+    }
+
+    return $userPrivacyFields;
+}
+
+function get_other_settings($user_id) {
+
+    $userPrivacyOtherSettings = array();
+
+    $query = db_select('privacy_profile_fields_other_settings', 'ppf');
+    $query->fields('ppf', array('field_name', 'privacy'));
+    $query->condition('user_id', $user_id,'=');
+    $result = $query->execute();
+
+    foreach ($result as $data) {
+        $userPrivacyOtherSettings['privacy_config'] = array(
+            $data->field_name => $data->privacy
+        );
+    }
+
+    $html = '';
+
+    $suggestionsHtml = '<div class="privacy-other-container" id="privacy-allow-suggestions">
+                        <input type="checkbox" value="1" class="form-checkbox" checked>
+                        <label class="option">' . t('Mich anderen Benutzern als Kontakt vorgeschlagen') . '</label>
+                        </div>';
+
+    $html .= $suggestionsHtml;
+
+    $userPrivacyOtherSettings['content'] = $html;
+
+
+    $settingsPos = variable_get('aup_other_settings_position', '');
+    if (!empty($settingsPos) && $settingsPos != 'none') {
+        $fieldName = variable_get('aup_other_settings_field', '');
+        $userPrivacyOtherSettings['paste'] = array(
+            'field' => $fieldName,
+            'position' => $settingsPos,
+        );
+    }
+
+    return $userPrivacyOtherSettings;
+}
+
+/**
+ * Implements hook_user_view().
+ */
+function privacy_profile_fields_user_view($account, $view_mode, $langcode)
+{
+    global $user;
+
+    $userPrivacyFields = get_field_settings($account->uid);
+
+    if ($user->uid != 1 && $user->uid != $account->uid) {
+        foreach ($userPrivacyFields as $key => $value) {
+            if ($value == 'private') {
+                unset($account->content[$key]);
+            }
+
+            if ($value == 'friends') {
+                $query = db_select('user_relationships', 'ur');
+                $query->fields('ur', array('requester_id'));
+                $query->condition('ur.requester_id', $user->uid,'=');
+                $query->condition('ur.requestee_id', $account->uid,'=');
+                $query->condition('ur.approved', 1,'=');
+                $query->condition('ur.rtid', variable_get('aup_friend_type', ''), '=');
+                $result = $query->execute();
+
+                if (!$result->fetchAssoc()) {
+                    unset($account->content[$key]);
+                }
+            }
+        }
+    }
+
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function privacy_profile_fields_form_user_profile_form_alter(&$form, &$form_state, $form_id)
+{
+    drupal_add_js(array('privacyProfile' => array('fieldsSettings' => json_encode(get_field_settings($form['#user']->uid)))), array('type' => 'setting'));
+    drupal_add_js(array('privacyProfile' => array('otherSettings' => json_encode(get_other_settings($form['#user']->uid)))), array('type' => 'setting'));
+    drupal_add_js(array('privacyProfile' => array('userID' => $form['#user']->uid)), array('type' => 'setting'));
+
+    drupal_add_js(drupal_get_path('module', 'privacy_profile_fields') . '/js/privacy_profile_fields.js');
+    drupal_add_css(drupal_get_path('module', 'privacy_profile_fields') . '/css/privacy_profile_fields.css');
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function privacy_profile_fields_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id)
+{
+
+    if (strpos($form['#field']['field_name'], variable_get('aup_prefix_privacy_fields', '')) !== false) {
+        $form['field']['settings']['field_privacy'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Benutzer dürfen Privatsphäreeinstellungen für das Feld verwenden'),
+            '#default_value' => isset($form['#field']['settings']['field_privacy']) ? $form['#field']['settings']['field_privacy'] : 0,
+        );
+    }
+
+}
+
+function privacy_profile_fields_dbschema()
+{
+    $schema = array();
+
+    $schema['privacy_profile_fields_other_settings'] = array(
+        'description' => 'The table for privacy_profile_fields_other_settings',
+        'fields' => array(
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'field_name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'privacy' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+        )
+    );
+
+    $schema['privacy_profile_fields'] = array(
+        'description' => 'The table for privacy_profile_fields',
+        'fields' => array(
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'field_name' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'privacy' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+        )
+    );
+
+    return $schema;
+}

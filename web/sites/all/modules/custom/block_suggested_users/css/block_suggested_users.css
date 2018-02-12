@@ -1,0 +1,17 @@
+.suggested-users-item {
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #cccccc;
+    display: table;
+    width: 100%;
+}
+
+.suggested-users-item .name {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.suggested-users-item .picture {
+    display: table-cell;
+    width: 70px;
+}

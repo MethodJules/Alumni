@@ -284,6 +284,7 @@ function projects_settings_form($form, &$form_state) {
     $form['projects']['aup_projects_content_type'] = array(
         '#type' => 'select',
         '#title' => t('Systemname des Content Types für Projekte'),
+        '#description' => t('Selectfeld zur Auswahl des Content Types Projekte. Wird für die Mitgliederverwaltung der Projekte benötigt. Modul alumni_projects muss den Content Type kennen.'),
         '#options' => $options,
         '#empty_option' => SELECT_DEFAULT,
         '#required' => TRUE,
@@ -325,9 +326,6 @@ function interests_settings_form($form, &$form_state) {
 
 function dashboard_settings_form($form, &$form_state)
 {
-
-    $options = array();
-
     //Alle Felder in Drupal laden
     $fields = field_info_fields();
 
@@ -338,7 +336,12 @@ function dashboard_settings_form($form, &$form_state)
         $options[$field['field_name']] = $field['field_name'];
     }
 
-    $form['interests']['aud_interests_user'] = array(
+    $form['dashboard'] = array(
+        '#type'  => 'fieldset',
+        '#title' => t('Dashboard Einstellungen'),
+    );
+
+    $form['dashboard']['aud_interests_user'] = array(
         '#type' => 'select',
         '#title' => t('Systemname des Feldes Interessen beim Benutzerprofil'),
         '#description' => t('Wird für die automatische Übereinstimmung zwischen Interessen des Benutzers und Stellenangeboten etc. benötigt.'),
@@ -348,7 +351,7 @@ function dashboard_settings_form($form, &$form_state)
         '#default_value' => variable_get('aud_interests_user', ''),
     );
 
-    $form['interests']['aud_interests_job_offers'] = array(
+    $form['dashboard']['aud_interests_job_offers'] = array(
         '#type' => 'select',
         '#title' => t('Systemname des Feldes Interessen beim Content Type für Stellenangebote'),
         '#description' => t('Wird für die automatische Übereinstimmung zwischen Interessen des Benutzers und Stellenangeboten etc. benötigt.'),

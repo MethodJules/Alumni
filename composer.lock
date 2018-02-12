@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "1c9c39d5d1cda8e1ec2d87d893226e96",
+    "content-hash": "f144df4c096286cb3bec378bb3fe2880",
     "packages": [
         {
             "name": "composer/installers",
@@ -1284,6 +1284,60 @@
             }
         },
         {
+            "name": "drupal/drupalchat",
+            "version": "2.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/drupalchat",
+                "reference": "7.x-2.8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/drupalchat-7.x-2.8.zip",
+                "reference": "7.x-2.8",
+                "shasum": "eff22dae57f594d735bba1ebb53d7b8bef0c22e8"
+            },
+            "require": {
+                "drupal/drupal": "~7.0"
+            },
+            "require-dev": {
+                "drupal/nodejs": "*"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-2.x": "2.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-2.8",
+                    "datestamp": "1499892243",
+                    "security-coverage": {
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "darklrd",
+                    "homepage": "https://www.drupal.org/user/435209"
+                },
+                {
+                    "name": "iflylabs",
+                    "homepage": "https://www.drupal.org/user/3480539"
+                }
+            ],
+            "description": "Allows users to communicate via instant chat messaging. Provides multiple AJAX implementations.",
+            "homepage": "https://www.drupal.org/project/drupalchat",
+            "support": {
+                "source": "http://cgit.drupalcode.org/drupalchat"
+            }
+        },
+        {
             "name": "drupal/ds",
             "version": "2.14.0",
             "source": {
@@ -2054,6 +2108,68 @@
             }
         },
         {
+            "name": "drupal/homebox",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://git.drupal.org/project/homebox",
+                "reference": "7.x-2.0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/homebox-7.x-2.0.zip",
+                "reference": "7.x-2.0",
+                "shasum": "eadeb6486e35ef2d1a3f4595838ac51ccf625c6b"
+            },
+            "require": {
+                "drupal/drupal": "*"
+            },
+            "require-dev": {
+                "drupal/og": "*"
+            },
+            "type": "drupal-module",
+            "extra": {
+                "branch-alias": {
+                    "dev-2.x": "2.x-dev"
+                },
+                "drupal": {
+                    "version": "7.x-2.0",
+                    "datestamp": "1513567384",
+                    "security-coverage": {
+                        "status": "not-covered",
+                        "message": "Project has not opted into security advisory coverage!"
+                    }
+                }
+            },
+            "notification-url": "https://packages.drupal.org/7/downloads",
+            "license": [
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "brianV",
+                    "homepage": "https://www.drupal.org/user/46854"
+                },
+                {
+                    "name": "drumm",
+                    "homepage": "https://www.drupal.org/user/3064"
+                },
+                {
+                    "name": "mstef",
+                    "homepage": "https://www.drupal.org/user/107190"
+                },
+                {
+                    "name": "stBorchert",
+                    "homepage": "https://www.drupal.org/user/36942"
+                }
+            ],
+            "description": "Provides user with a page like iGoogle, Netvibes or bbc.co.uk front page",
+            "homepage": "https://www.drupal.org/project/homebox",
+            "support": {
+                "source": "http://cgit.drupalcode.org/homebox"
+            }
+        },
+        {
             "name": "drupal/job_scheduler",
             "version": "2.0.0-alpha3",
             "source": {
@@ -2130,81 +2246,6 @@
             "homepage": "https://www.drupal.org/project/job_scheduler",
             "support": {
                 "source": "http://cgit.drupalcode.org/job_scheduler"
-            }
-        },
-        {
-            "name": "drupal/jquery_update",
-            "version": "2.7.0",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupal.org/project/jquery_update",
-                "reference": "7.x-2.7"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/jquery_update-7.x-2.7.zip",
-                "reference": "7.x-2.7",
-                "shasum": "1f1e663f63a6872923f0fc9cd51510f64233bae2"
-            },
-            "require": {
-                "drupal/drupal": "~7.0"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "branch-alias": {
-                    "dev-2.x": "2.x-dev"
-                },
-                "drupal": {
-                    "version": "7.x-2.7",
-                    "datestamp": "1445458536",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/7/downloads",
-            "license": [
-                "GPL-2.0+"
-            ],
-            "authors": [
-                {
-                    "name": "RobLoach",
-                    "homepage": "https://www.drupal.org/user/61114"
-                },
-                {
-                    "name": "Victor Safronov",
-                    "homepage": "https://www.drupal.org/user/632950"
-                },
-                {
-                    "name": "ericduran",
-                    "homepage": "https://www.drupal.org/user/244460"
-                },
-                {
-                    "name": "jjeff",
-                    "homepage": "https://www.drupal.org/user/17190"
-                },
-                {
-                    "name": "markcarver",
-                    "homepage": "https://www.drupal.org/user/501638"
-                },
-                {
-                    "name": "mfer",
-                    "homepage": "https://www.drupal.org/user/25701"
-                },
-                {
-                    "name": "sun",
-                    "homepage": "https://www.drupal.org/user/54136"
-                },
-                {
-                    "name": "webchick",
-                    "homepage": "https://www.drupal.org/user/24967"
-                }
-            ],
-            "description": "Update jQuery and jQuery UI to a more recent version.",
-            "homepage": "https://www.drupal.org/project/jquery_update",
-            "support": {
-                "source": "http://cgit.drupalcode.org/jquery_update"
             }
         },
         {

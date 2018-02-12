@@ -1,0 +1,19 @@
+.job-offers-item {
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #cccccc;
+    position: relative;
+}
+
+.job-offers-item .created {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+@media screen and (max-width: 640px) {
+    .job-offers-item .created {
+        position: static;
+        display: block;
+    }
+}

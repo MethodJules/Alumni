@@ -1,0 +1,142 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function block_suggested_users_menu()
+{
+    $items = array();
+
+    $items['dashboard/get/suggested-users'] = array(
+        'page callback' => 'get_next_suggested_users',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    return $items;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function block_suggested_users_block_info()
+{
+    $blocks['block_suggested_users'] = array(
+        'info' => t('Benutzer mit gleichen Interessen'),
+    );
+
+    return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function block_suggested_users_block_view($delta = '')
+{
+    $block = array();
+
+    switch ($delta) {
+        case 'block_suggested_users':
+            $block['subject'] = t('Benutzer mit gleichen Interessen');
+
+            global $user;
+            $path = drupal_get_path('module', 'block_suggested_users');
+
+            $block['content'] = array(
+                '#markup' => getSuggestedUsersList($user->uid),
+                '#attached' => array(
+                    'css' => array(
+                        "$path/css/block_suggested_users.css",
+                    ),
+                    'js' => array(
+                        "$path/js/block_suggested_users.js",
+                    ),
+                ),
+            );
+
+
+        break;
+    }
+
+    return $block;
+}
+
+function get_next_suggested_users() {
+    global $user;
+    drupal_json_output(getSuggestedUsersList($user->uid));
+    drupal_exit();
+}
+
+function getSuggestedUsersList($user_id) {
+
+    $suggestedUsersListHtml = '';
+
+    //Im Adminbereich definierte Systemnamen der Felder von Interessen im Benutzerprofil und in den Stellenangeboten auslesen
+    //Diese werden zum joinen der Tabellen in der Datenbank benötigt, um die Einträge auszugeben, bei denen die Interessen übereinstimmen
+    $userInterestsField = variable_get('aud_interests_user');
+
+    //Pfad des Moduls holen, damit die CSS und JS Dateien richtig eingebunden werden können
+    $path = drupal_get_path('module', 'block_suggested_users');
+
+    $subQuery = db_select('field_data_' . $userInterestsField, 'u2');
+    $subQuery->fields('u2', array($userInterestsField . '_tid'));
+    $subQuery->condition('u2.entity_id', $user_id, '=');
+
+    $subQuery2 = db_select('user_relationships', 'ur');
+    $subQuery2->fields('ur', array('requestee_id'));
+    $subQuery2->condition('ur.requester_id', $user_id, '=');
+
+    $query = db_select('field_data_' . $userInterestsField, 'fd')->extend('PagerDefault');
+    $query->distinct();
+    $query->join('users', 'us', 'fd.entity_id = us.uid');
+    $query->leftJoin('privacy_profile_fields_other_settings', 'ppf', 'fd.entity_id = ppf.user_id');
+    $query->fields('fd', array('entity_id'));
+    $query->fields('us', array('name'));
+    $query->condition('fd.'. $userInterestsField . '_tid', $subQuery,'IN');
+    $query->condition('fd.entity_id', $subQuery2,'NOT IN');
+    $query->condition('fd.entity_id', $user_id,'!=');
+
+
+    $conGroup1 = db_and()
+        ->condition('ppf.field_name', 'privacy_allow_suggestions', '=')
+        ->condition('ppf.privacy', '0', '!=');
+
+    $conGroup2 = db_and()
+        ->isNull('ppf.field_name')
+        ->isNull('ppf.privacy');
+
+    $query->condition(db_or()->condition($conGroup1)->condition($conGroup2));
+    $query->orderBy('entity_id', 'DESC');
+    $query->limit(5);
+
+    $result = $query->execute();
+
+    $paging = theme('pager');
+
+    if ($result->rowCount() == 0) {
+        $suggestedUsersListHtml .= '<p>' . t('Keine Benutzer mit gleichen Interessen gefunden.') . '</p>';
+    } else {
+        foreach ($result as $data) {
+            $loadUser = user_load($data->entity_id);
+
+            $pictureLink = '';
+            if (is_object($loadUser->picture)) {
+                $pictureLink = file_create_url($loadUser->picture->uri);
+            } else {
+                $pictureLink = $path . '/images/no_pic.jpg';
+            }
+
+            $suggestedUsersListHtml .= '
+                <div class="suggested-users-item">                                        
+                    <div class="picture"><img src="' . $pictureLink . '" width="50px"></div>
+                    <div class="name"><a href=" ' . base_path() . 'user/' . $data->entity_id . '" target="_blank">' . $data->name . '</a></div>
+                </div>
+            ';
+
+        }
+
+    }
+
+    $suggestedUsersListHtml .= $paging;
+    return $suggestedUsersListHtml;
+}

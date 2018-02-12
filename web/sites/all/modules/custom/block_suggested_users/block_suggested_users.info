@@ -1,0 +1,8 @@
+name = Block for suggested users
+description = Block for suggested users
+core = 7.x
+package = Alumni Portal
+
+dependencies[] = alumni_admin_settings
+dependencies[] = user_relationships
+dependencies[] = privacy_profile_fields

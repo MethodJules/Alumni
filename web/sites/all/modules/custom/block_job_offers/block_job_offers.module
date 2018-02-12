@@ -1,0 +1,116 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function block_job_offers_menu()
+{
+    $items = array();
+
+    $items['dashboard/get/job-offers'] = array(
+        'page callback' => 'get_next_job_offers',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    return $items;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function block_job_offers_block_info()
+{
+    $blocks['block_job_offers'] = array(
+        'info' => t('Vorgeschlagene Stellenangebote'),
+    );
+
+    return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function block_job_offers_block_view($delta = '')
+{
+    $block = array();
+
+    switch ($delta) {
+        case 'block_job_offers':
+            $block['subject'] = t('Für dich empfohlene Stellenangebote');
+
+            global $user;
+            $path = drupal_get_path('module', 'block_job_offers');
+
+            $block['content'] = array(
+                '#markup' => getJobOffersList($user->uid),
+                '#attached' => array(
+                    'css' => array(
+                        "$path/css/block_job_offers.css",
+                    ),
+                    'js' => array(
+                        "$path/js/block_job_offers.js",
+                    ),
+                ),
+            );
+
+
+        break;
+    }
+
+    return $block;
+}
+
+function get_next_job_offers() {
+    global $user;
+    drupal_json_output(getJobOffersList($user->uid));
+    drupal_exit();
+}
+
+function getJobOffersList($user_id) {
+
+    //Im Adminbereich definierte Systemnamen der Felder von Interessen im Benutzerprofil und in den Stellenangeboten auslesen
+    //Diese werden zum joinen der Tabellen in der Datenbank benötigt, um die Einträge auszugeben, bei denen die Interessen übereinstimmen
+    $userInterestsField = variable_get('aud_interests_user');
+    $jobOffersInterestsField = variable_get('aud_interests_job_offers');
+
+    $jobOffersListHtml = '';
+
+    //Datenbankquery zusammenbauen. Tabellen mit dem Interesse des Benutzers und dem Interesse aus dem Stellenangebot werden miteinander gejoined
+    //und die Tabelle node, damit alle Informationen für die passenden Stellenangebote im result zur Verfügung stehen
+    $query = db_select('field_data_' . $userInterestsField, 'u')->extend('PagerDefault');
+
+    $query->distinct();
+    $query->join('field_data_' . $jobOffersInterestsField, 'jo', 'u.' . $userInterestsField . '_tid = jo.' . $jobOffersInterestsField . '_tid');
+    $query->join('node', 'n', 'jo.entity_id = n.nid');
+    $query->fields('jo', array('entity_id'));
+    $query->fields('n', array('title', 'created', 'changed'));
+    $query->condition('u.entity_id', $user_id,'=');
+    $query->condition('n.status', 1,'=');
+    $query->orderBy('created', 'DESC');
+    $query->limit(5);
+
+    $result = $query->execute();
+
+    $paging = theme('pager');
+
+    //Wenn es keine übereinstimmenden Stellenangebote mit den Interessen des Benutzers gibt entsprechende Meldung festlegen
+    if ($result->rowCount() == 0) {
+        $jobOffersListHtml .= '<p>' . t('Keine für dich empfohlenen Stellenangebote stehen zur Verfügung. Eventuell die Interessen im Nutzerprofil überprüfen.') . '</p>';
+    } else {
+        //Alle Zeilen von result iterieren und der Variable ein widget-list-item mit jeweils einem passenden Stellenangebot hinzufügen
+        foreach ($result as $data) {
+            $jobOffersListHtml .= '
+                <div class="job-offers-item">
+                    <div class="title"><a href=" ' . base_path() . 'node/' . $data->entity_id . '" target="_blank">' . $data->title . '</a></div>
+                    <div class="created"><b>' . t('Erstellt am:') . ' </b>' . date("d.m.Y - H:i", $data->created) . '</div>
+                </div>
+            ';
+        }
+
+
+    }
+
+    $jobOffersListHtml .= $paging;
+    return $jobOffersListHtml;
+}

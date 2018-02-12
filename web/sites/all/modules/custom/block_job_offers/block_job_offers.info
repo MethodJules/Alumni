@@ -1,0 +1,6 @@
+name = Block for job offers
+description = Block for job offers
+core = 7.x
+package = Alumni Portal
+
+dependencies[] = alumni_admin_settings
