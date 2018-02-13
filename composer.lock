@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "f144df4c096286cb3bec378bb3fe2880",
+    "content-hash": "926726add3fbe2f2b9215e55b65624ce",
     "packages": [
         {
             "name": "composer/installers",
@@ -1281,60 +1281,6 @@
             "homepage": "https://www.drupal.org/project/drupal",
             "support": {
                 "source": "http://cgit.drupalcode.org/drupal"
-            }
-        },
-        {
-            "name": "drupal/drupalchat",
-            "version": "2.8.0",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupal.org/project/drupalchat",
-                "reference": "7.x-2.8"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/drupalchat-7.x-2.8.zip",
-                "reference": "7.x-2.8",
-                "shasum": "eff22dae57f594d735bba1ebb53d7b8bef0c22e8"
-            },
-            "require": {
-                "drupal/drupal": "~7.0"
-            },
-            "require-dev": {
-                "drupal/nodejs": "*"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "branch-alias": {
-                    "dev-2.x": "2.x-dev"
-                },
-                "drupal": {
-                    "version": "7.x-2.8",
-                    "datestamp": "1499892243",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/7/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "darklrd",
-                    "homepage": "https://www.drupal.org/user/435209"
-                },
-                {
-                    "name": "iflylabs",
-                    "homepage": "https://www.drupal.org/user/3480539"
-                }
-            ],
-            "description": "Allows users to communicate via instant chat messaging. Provides multiple AJAX implementations.",
-            "homepage": "https://www.drupal.org/project/drupalchat",
-            "support": {
-                "source": "http://cgit.drupalcode.org/drupalchat"
             }
         },
         {
