@@ -1,5 +1,6 @@
 <?php
 
+//Funktion baut das Formular für das Admininterface zusammen
 function privacy_settings_form($form, &$form_state)
 {
     $options = array();

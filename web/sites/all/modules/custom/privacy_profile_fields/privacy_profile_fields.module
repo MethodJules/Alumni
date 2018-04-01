@@ -5,6 +5,7 @@
  */
 function privacy_profile_fields_menu()
 {
+    //Tabellen in der Datenbank erstellen, falls nicht vorhanden
     $schema = privacy_profile_fields_dbschema();
     if(!db_table_exists('privacy_profile_fields')) {
         db_create_table('privacy_profile_fields', $schema['privacy_profile_fields']);
@@ -16,12 +17,14 @@ function privacy_profile_fields_menu()
 
     $items = array();
 
+    //Link definieren, der per AJAX aufgerufen wird, um die Datenschutzeinstellungen zu speichern
     $items['privacyprofile/config/save'] = array(
         'page callback' => 'save_user_privacy',
         'type' => MENU_CALLBACK,
         'access callback' => 'user_is_logged_in',
     );
 
+    //Link fürs Admininterface zur Konfiguration des Moduls definieren
     $items['admin/config/alumni/privacy'] = array(
         'title' => t('Datenschutz'),
         'description' => t('Einstellungen für den Datenschutz im Benutzerprofil.'),
@@ -34,16 +37,21 @@ function privacy_profile_fields_menu()
     return $items;
 }
 
+//Funktion wird aufgerufen, wenn der Benutzer sein Profil speichert
 function save_user_privacy()
 {
     //Json String in ein Array umwandeln
     $confArr = json_decode($_POST['config'], true);
+
+    //User ID aus POST Array auslesen
     $user_id= $_POST['userid'];
 
+    //Alle bisherigen Einstellungen für den Benutzer löschen
     db_delete('privacy_profile_fields')
         ->condition('user_id', $user_id, '=')
         ->execute();
 
+    //Alle Einstellungen zum Datenschutz hinzufügen
     foreach ($confArr['privacy_fields'] as $key => $value) {
         db_insert('privacy_profile_fields')
             ->fields(array(
@@ -54,10 +62,12 @@ function save_user_privacy()
             ->execute();
     }
 
+    //Alle bisherigen Einstellungen für den Benutzer löschen
     db_delete('privacy_profile_fields_other_settings')
         ->condition('user_id', $user_id, '=')
         ->execute();
 
+    //Alle weiteren Einstellungen zum Datenschutz hinzufügen
     foreach ($confArr['privacy_others'] as $key => $value) {
         db_insert('privacy_profile_fields_other_settings')
             ->fields(array(
@@ -70,29 +80,40 @@ function save_user_privacy()
 
 }
 
+//Funktion liest die gespeicherten Datenschutzeinstellungen aus der DB aus, erstellt HTML Code und gibt ein Array mit den Feldern und den Einstellungen zurück
 function get_field_settings($user_id)
 {
 
+    //Benutzerobjekt laden mit den Feldern des Benutzerprofils
     $userLoad = user_load($user_id);
 
+    //Alle gespeicherten Datenschutzeinstellungen für die Felder des Benutzers laden
     $fieldConf = array();
     $query = db_select('privacy_profile_fields', 'ppf');
     $query->fields('ppf', array('field_name', 'privacy'));
     $query->condition('user_id', $user_id,'=');
     $result = $query->execute();
 
+    //Vorläufiges Array mit den Informationen befüllen
     foreach ($result as $data) {
         $fieldConf[$data->field_name] = $data->privacy;
     }
 
     $userPrivacyFields = array();
 
+    //Alle Felder des Benutzerprofiles vom Benutzerobjekt iterieren
     foreach ($userLoad as $key => $value) {
+        //Es sollen nur Felder berücksichtigt werden, die einen entsprechenden Prefix haben. Dieser muss in den Einstellungen vom Modul
+        //festgelgt werden. Somit müssen nicht alle Felder im Benutzerprofil überprüft werden
         if (strpos($key, variable_get('aup_prefix_privacy_fields', '')) !== false) {
+
+            //Feldinformationen laden
             $fieldInfo = field_info_field($key);
 
+            //Überprüfen, ob für das Feld die Verwendung des Datenschutzes in den Einstellungen den Feldes aktiviert wurden
             if (isset($fieldInfo['settings']['field_privacy']) && $fieldInfo['settings']['field_privacy'] == 1) {
 
+                //HTML zusammenbauen
                 $html = '<div class="privacy-field-container" id="' . str_replace('_', '-', $key) . '">
                         <select class="form-select">
                         <option value="public">' . t('Öffentlich') . '</option>
@@ -101,6 +122,8 @@ function get_field_settings($user_id)
                         </select>
                         </div>';
 
+                //Array mit HTML Code und dem Status (Öffentlich, Freunde, nur ich) befüllen. Dieses Array wird dann im weiteren Schritt
+                //an Javascript übergeben, wo die Datenschutzfelder nach den konfigurierten Feldern eingefügt werden.
                 $userPrivacyFields[$key] = array(
                     'status' => isset($fieldConf[$key]) ? $fieldConf[$key] : 'none',
                     'content' => $html,
@@ -112,10 +135,13 @@ function get_field_settings($user_id)
     return $userPrivacyFields;
 }
 
+//Funktion liest die erweiterten Datenschutzeinstellungen aus der DB aus und erstellt ein Array
 function get_other_settings($user_id) {
 
     $userPrivacyOtherSettings = array();
 
+    //Einstellungen zu den Feldern aus der DB auslesen und in Array speichern. Diese gespeicherten Einstellungen
+    //werden später mit Javascript den Feldern zugewiesen, z.B. die Checkbox setzen, wenn dies so vorher gespeichert wurde
     $query = db_select('privacy_profile_fields_other_settings', 'ppf');
     $query->fields('ppf', array('field_name', 'privacy'));
     $query->condition('user_id', $user_id,'=');
@@ -129,6 +155,7 @@ function get_other_settings($user_id) {
 
     $html = '';
 
+    //HTML zusammenbauen. Standardmäßig ist die Checkbox aktiviert, ansonsten wird diese per Javascript deaktiviert
     $suggestionsHtml = '<div class="privacy-other-container" id="privacy-allow-suggestions">
                         <input type="checkbox" value="1" class="form-checkbox" checked>
                         <label class="option">' . t('Mich anderen Benutzern als Kontakt vorgeschlagen') . '</label>
@@ -136,11 +163,17 @@ function get_other_settings($user_id) {
 
     $html .= $suggestionsHtml;
 
+    //HTML dem Array hinzufügen
     $userPrivacyOtherSettings['content'] = $html;
 
-
+    //Gesetzte Einstellungen für das Modul im Admininterface auslesen. Position, an der die erweiterten Datenschutzeinstellungen angezeigt werden sollen,
+    //aus Variable laden
     $settingsPos = variable_get('aup_other_settings_position', '');
+
+    //Nur wenn eine Position definiert wurde, soll dieses auch angezeigt werden
     if (!empty($settingsPos) && $settingsPos != 'none') {
+
+        //Festgelegtes Feld im Admininterface auslesen, bei dem vor oder danach die erweiterten Datenschutzeinstellungen eingefügt werden
         $fieldName = variable_get('aup_other_settings_field', '');
         $userPrivacyOtherSettings['paste'] = array(
             'field' => $fieldName,
@@ -154,19 +187,27 @@ function get_other_settings($user_id) {
 /**
  * Implements hook_user_view().
  */
+//Ansicht des Benutzerprofils manipulieren, um Felder ggf. auszublenden entsprechend den Datenschutzeinstellungen
 function privacy_profile_fields_user_view($account, $view_mode, $langcode)
 {
     global $user;
 
+    //Gespeicherte Einstellungen für den Datenschutz der Felder eines Benutzers laden
     $userPrivacyFields = get_field_settings($account->uid);
 
+    //Datenschutzeinstellungen sollen nur greifen, wenn der aktuelle Benutzer kein Admin ist und er nicht sein eigenes Profil betrachtet.
     if ($user->uid != 1 && $user->uid != $account->uid) {
+        //Alle Einstellungen der Felder iterieren
         foreach ($userPrivacyFields as $key => $value) {
-            if ($value == 'private') {
+
+            //Wenn "nur ich" ausgewählt wurde, das Feld nicht anzeigen
+            if ($value['status'] == 'private') {
                 unset($account->content[$key]);
             }
 
-            if ($value == 'friends') {
+            //Wenn "Freunde" ausgewählt wurde, überprüfen, ob der aktuelle Benutzer ein Freund des Benutzers ist, von dem gerade
+            //das Profil betrachtet wird. Wenn er es nicht ist, dann soll dieses Feld nicht angezeigt werden.
+            if ($value['status'] == 'friends') {
                 $query = db_select('user_relationships', 'ur');
                 $query->fields('ur', array('requester_id'));
                 $query->condition('ur.requester_id', $user->uid,'=');
@@ -187,8 +228,11 @@ function privacy_profile_fields_user_view($account, $view_mode, $langcode)
 /**
  * Implements hook_form_BASE_FORM_ID_alter().
  */
+//Formular des Benutzerprofils ändern, sodass JS und CSS Dateien hinzugefügt werden, die dann später die Datenschutzeinstellungen zu den Feldern
+//hinzufügen, das Speichern der Datenschutzeinstellungen übernehmen, etc.
 function privacy_profile_fields_form_user_profile_form_alter(&$form, &$form_state, $form_id)
 {
+    //Variablen definieren, auf die in Javascript zugegriffen werden kann
     drupal_add_js(array('privacyProfile' => array('fieldsSettings' => json_encode(get_field_settings($form['#user']->uid)))), array('type' => 'setting'));
     drupal_add_js(array('privacyProfile' => array('otherSettings' => json_encode(get_other_settings($form['#user']->uid)))), array('type' => 'setting'));
     drupal_add_js(array('privacyProfile' => array('userID' => $form['#user']->uid)), array('type' => 'setting'));
@@ -200,9 +244,12 @@ function privacy_profile_fields_form_user_profile_form_alter(&$form, &$form_stat
 /**
  * Implements hook_form_BASE_FORM_ID_alter().
  */
+//Formular für die Konfiguration eines Feldes ändern, sodass eine Checkbox hinzugefügt werden kann, ob der Benutzer
+//für dieses Feld die Datenschutzeinstellungen verwenden kann
 function privacy_profile_fields_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id)
 {
 
+    //Wenn das Feld einen definierten Prefix hat, eine Checkbox dem Konfigurationsformular hinzufügen
     if (strpos($form['#field']['field_name'], variable_get('aup_prefix_privacy_fields', '')) !== false) {
         $form['field']['settings']['field_privacy'] = array(
             '#type' => 'checkbox',
@@ -213,6 +260,7 @@ function privacy_profile_fields_form_field_ui_field_edit_form_alter(&$form, &$fo
 
 }
 
+//Funktion definiert, wie die Tabellen und Spalten in der DB auszusehen haben.
 function privacy_profile_fields_dbschema()
 {
     $schema = array();

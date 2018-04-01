@@ -299,17 +299,21 @@ function interests_settings_form($form, &$form_state) {
 
     $options = array();
 
+    //Alle Taxonomien laden
     $vocabs = taxonomy_get_vocabularies();
 
+    //options Array für das Selectfeld aufbauen
     foreach ($vocabs as $data) {
         $options[$data->machine_name] = $data->machine_name;
     }
 
+    //Fieldset definieren
     $form['interests'] = array(
         '#type'  => 'fieldset',
         '#title' => t('Projekte Einstellungen'),
     );
 
+    //Selectfeld zur Auswahl des Systemnamens der Taxonomie definieren
     $form['interests']['aup_interests_taxonomy'] = array(
         '#type' => 'select',
         '#title' => t('Systemname der Taxonomy Liste für Interessen'),
@@ -341,6 +345,7 @@ function dashboard_settings_form($form, &$form_state)
         '#title' => t('Dashboard Einstellungen'),
     );
 
+    //Selectfeld definieren
     $form['dashboard']['aud_interests_user'] = array(
         '#type' => 'select',
         '#title' => t('Systemname des Feldes Interessen beim Benutzerprofil'),
@@ -351,6 +356,7 @@ function dashboard_settings_form($form, &$form_state)
         '#default_value' => variable_get('aud_interests_user', ''),
     );
 
+    //Selectfeld definieren
     $form['dashboard']['aud_interests_job_offers'] = array(
         '#type' => 'select',
         '#title' => t('Systemname des Feldes Interessen beim Content Type für Stellenangebote'),

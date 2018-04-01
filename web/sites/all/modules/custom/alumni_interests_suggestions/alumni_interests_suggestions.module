@@ -1,17 +1,21 @@
 <?php
 
+//Baut die Form fürs Admininterface auf, wo die vorgeschlagenen Interessen bestätigt oder gelöscht werden können
 function interests_suggestions_form($form, &$form_state) {
 
+    //CSS hinzufügen
     drupal_add_css(drupal_get_path('module', 'alumni_interests_suggestions') . '/css/ais_custom.css', array('group' => CSS_DEFAULT));
 
     $form = array();
 
+    //Fieldset defineiren
     $form['interests_suggestions'] = array(
         '#type' => 'fieldset',
         '#title' => t('Vorgeschlagene Interessen bearbeiten'),
         '#tree' => TRUE,
     );
 
+    //Vorschläge aus der DB laden
     $query = db_select('alumni_interests_suggestions', 'ais');
     $query->fields('ais', array('id', 'name'));
     $result = $query->execute();
@@ -22,6 +26,8 @@ function interests_suggestions_form($form, &$form_state) {
         );
     } else {
         $counter = 0;
+
+        //Für jeden Vorschlag ein Textfeld mit dem Titel des Vorschlags und einem Selectfeld mit den Optionen definieren
         foreach ($result as $data) {
             $form['interests_suggestions'][$counter]['interest_name'] = array(
                 '#type' => 'textfield',
@@ -43,6 +49,7 @@ function interests_suggestions_form($form, &$form_state) {
                 '#suffix' => '</div><div class="clear-float"></div>',
             );
 
+            //Die ID wird für die Funktion zum Speichern benötigt, daher wird ein verstecktes Feld mit der ID definiert
             $form['interests_suggestions'][$counter]['interest_id'] = array(
                 '#type' => 'hidden',
                 '#value' => $data->id,
@@ -60,14 +67,20 @@ function interests_suggestions_form($form, &$form_state) {
     return $form;
 }
 
+//Funktion wird aufgerufen, wenn im Admininterface der Buttom zum Speichern bei den vorgeschlagenen Interessen gedrückt wird
 function interests_suggestions_form_submit($form, &$form_state) {
-    dpm($form_state);
 
+    //Überprüfen, ob im Admininterface bei den Einstellungen zu diesem Modul eine Taxonomie für Interessen ausgewählt wurde,
+    //in die akzeptierte Vorschläge mit aufgenommen werden soll
     if (!empty(variable_get('aup_interests_taxonomy', ''))) {
+        //Taxonomie laden, damit auch die vid geladen werden kann
         $vocab = taxonomy_vocabulary_machine_name_load(variable_get('aup_interests_taxonomy'));
         $vid = $vocab->vid;
 
+        //Jedes Interessenfeld des Formulars iterieren
         foreach ($form_state['values']['interests_suggestions'] as $value) {
+
+            //Wenn der Vorschlag veröffentlich werden soll, diesen der Taxonomie hinzufügen
             if ($value['interest_select'] != SELECT_DEFAULT) {
                 if ($value['interest_select'] == 'publish') {
                     $term = new stdClass();
@@ -76,6 +89,7 @@ function interests_suggestions_form_submit($form, &$form_state) {
                     taxonomy_term_save($term);
                 }
 
+                //Wenn löschen oder veröffentlichen gewählt wurde, dann soll der Vorschlag aus der Tabelle für Vorschläge entfernt werden
                 if ($value['interest_select'] == 'remove' || $value['interest_select'] == 'publish') {
                     db_delete('alumni_interests_suggestions')
                         ->condition('id', $value['interest_id'], '=')
@@ -91,11 +105,14 @@ function alumni_interests_suggestions_menu() {
 
     $items = array();
 
+    //Datenbank Tabelle erstellen, falls nicht vorhanden
     $schema = alumni_interests_suggestions_dbschema();
     if(!db_table_exists('alumni_interests_suggestions')) {
         db_create_table('alumni_interests_suggestions', $schema['alumni_interests_suggestions']);
     }
 
+    //Wenn im Admininterface eine Taxonomie ausgewählt wurde, in der die Vorschläge gespeichert werden sollen,
+    //einen Link für die Übersichtsseite der Taxonomien erzeugen, mit dem zu den Vorschlägen gelangt werden kann
     if (!empty(variable_get('aup_interests_taxonomy', ''))) {
         $items['admin/structure/taxonomy/suggestions'] = array(
             'title' => t('Vorschläge'),
@@ -106,6 +123,7 @@ function alumni_interests_suggestions_menu() {
         );
     }
 
+    //Link definieren, der die Vorschlagsseite repräsentiert
     $items['suggest/interest'] = array(
         'title' => t('Interesse vorschlagen'),
         'page callback' => 'drupal_get_form',

@@ -7,6 +7,7 @@ function block_job_offers_menu()
 {
     $items = array();
 
+    //Link wird aufgerufen, wenn weitere Seiten von Stellenangeboten geladen werden sollen
     $items['dashboard/get/job-offers'] = array(
         'page callback' => 'get_next_job_offers',
         'type' => MENU_CALLBACK,
@@ -21,6 +22,7 @@ function block_job_offers_menu()
  */
 function block_job_offers_block_info()
 {
+    //Block für Stellenangebote definieren
     $blocks['block_job_offers'] = array(
         'info' => t('Vorgeschlagene Stellenangebote'),
     );
@@ -37,6 +39,7 @@ function block_job_offers_block_view($delta = '')
 
     switch ($delta) {
         case 'block_job_offers':
+            //Genauere Informationen, wie Inhalt, CSS und JS Dateien definieren
             $block['subject'] = t('Für dich empfohlene Stellenangebote');
 
             global $user;
@@ -61,6 +64,7 @@ function block_job_offers_block_view($delta = '')
     return $block;
 }
 
+//Funktion wird per AJAX aufgerufen, um weitere Seiten der Stellenangebote zu laden
 function get_next_job_offers() {
     global $user;
     drupal_json_output(getJobOffersList($user->uid));
@@ -111,6 +115,7 @@ function getJobOffersList($user_id) {
 
     }
 
+    //Am Ende vom HTML Code noch die Navigation für die anderen Seiten hinzufügen
     $jobOffersListHtml .= $paging;
     return $jobOffersListHtml;
 }

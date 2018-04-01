@@ -1,0 +1,465 @@
+<?php
+
+
+/**
+ * Implements hook_menu().
+ */
+function friends_chat_menu()
+{
+    $items = array();
+
+    $schema = friends_chat_dbschema();
+    if(!db_table_exists('friends_chat_users')) {
+        db_create_table('friends_chat_users', $schema['friends_chat_users']);
+    }
+
+    if(!db_table_exists('friends_chat_messages')) {
+        db_create_table('friends_chat_messages', $schema['friends_chat_messages']);
+    }
+
+    if(!db_table_exists('friends_chat_open')) {
+        db_create_table('friends_chat_open', $schema['friends_chat_open']);
+    }
+
+    if(!db_table_exists('friends_chat_messages_polled')) {
+        db_create_table('friends_chat_messages_polled', $schema['friends_chat_messages_polled']);
+    }
+
+    $items['friends-chat/chat-poll'] = array(
+        'page callback' => 'chat_poll',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['friends-chat/get-friends-list'] = array(
+        'page callback' => 'get_friends_list',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['friends-chat/save-message'] = array(
+        'page callback' => 'save_message',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['friends-chat/get-settings'] = array(
+        'page callback' => 'get_settings',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['friends-chat/update-open-chats'] = array(
+        'page callback' => 'update_open_chats',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['friends-chat/update-messages-polled'] = array(
+        'page callback' => 'update_messages_polled',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['friends-chat/get-chat-history'] = array(
+        'page callback' => 'get_chat_history',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    $items['friends-chat/set-read-timestamp'] = array(
+        'page callback' => 'set_read_timestamp',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+    );
+
+    return $items;
+}
+
+function get_chat_history() {
+    global $user;
+    $sender = $_POST['sender'];
+
+    $messageArr = array();
+
+    $query = db_select('friends_chat_messages', 'fcm');
+    $query->fields('fcm', array('sender', 'receiver', 'created_timestamp', 'read_timestamp', 'message'));
+    $query->condition('fcm.sender', array($sender, $user->uid),'IN');
+    $query->condition('fcm.receiver', array($sender, $user->uid),'IN');
+    $query->orderBy('fcm.created_timestamp', 'ASC');
+    $result = $query->execute();
+
+    if ($result->rowCount() == 0) {
+        $messageArr['status'] = 'nothing';
+    } else {
+        $messageArr['status'] = 'success';
+        $messageArr['sender'] = $sender;
+        $messageArr['messages'] = array();
+
+        foreach ($result as $data) {
+
+            $type = $data->receiver == $user->uid ? 'message-friend' : 'message-me';
+
+            array_push(
+                $messageArr['messages'],
+                array(
+                    'type' => $type,
+                    'created_timestamp' => $data->created_timestamp,
+                    'read_timestamp' => $data->read_timestamp,
+                    'message' => $data->message,
+                )
+            );
+        }
+
+    }
+    drupal_json_output($messageArr);
+    drupal_exit();
+
+}
+
+function update_open_chats() {
+    global $user;
+
+    $openChatIDs = $_POST['openChatIDs'];
+    $openChatWindowIDs = $_POST['openChatWindowIDs'];
+
+    $query = db_select('friends_chat_open', 'fcs');
+    $query->fields('fcs', array('user_id'));
+    $query->condition('fcs.user_id', $user->uid,'=');
+    $result = $query->execute();
+
+    if ($result->rowCount() == 0) {
+        $query = db_insert('friends_chat_open')
+            ->fields(array(
+                'user_id' => $user->uid,
+                'open_chat_ids' => $openChatIDs,
+                'open_chat_window_ids' => $openChatWindowIDs,
+            ));
+        $query->execute();
+    } else {
+        $query = db_update('friends_chat_open')
+        ->fields(array(
+            'open_chat_ids' => $openChatIDs,
+            'open_chat_window_ids' => $openChatWindowIDs,
+        ));
+        $query->condition('user_id', $user->uid, '=');
+        $query->execute();
+    }
+}
+
+function update_messages_polled() {
+    global $user;
+
+    $messagesPolled = $_POST['messagesPolled'];
+
+    $query = db_select('friends_chat_messages_polled', 'fcmp');
+    $query->fields('fcmp', array('user_id'));
+    $query->condition('fcmp.user_id', $user->uid,'=');
+    $result = $query->execute();
+
+    if ($result->rowCount() == 0) {
+        $query = db_insert('friends_chat_messages_polled')
+            ->fields(array(
+                'user_id' => $user->uid,
+                'messages_polled' => $messagesPolled,
+            ));
+        $query->execute();
+    } else {
+        $query = db_update('friends_chat_messages_polled')
+        ->fields(array(
+            'messages_polled' => $messagesPolled,
+        ));
+        $query->condition('user_id', $user->uid, '=');
+        $query->execute();
+    }
+}
+
+function get_settings() {
+    global $user;
+    $query = db_select('friends_chat_open', 'fcs');
+    $query->fields('fcs', array('open_chat_ids', 'open_chat_window_ids'));
+    $query->condition('fcs.user_id', $user->uid,'=');
+    $result = $query->execute();
+
+    $resArr = array();
+
+    if ($result = $result->fetchAssoc()) {
+        $resArr['openChatIDs'] = $result['open_chat_ids'];
+        $resArr['openChatWindowIDs'] = $result['open_chat_window_ids'];
+    }
+
+    $query = db_select('friends_chat_messages_polled', 'fcmp');
+    $query->fields('fcmp', array('messages_polled'));
+    $query->condition('fcmp.user_id', $user->uid,'=');
+    $result = $query->execute();
+
+    if ($result = $result->fetchAssoc()) {
+        $resArr['messagesPolled'] = $result['messages_polled'];
+    }
+
+    drupal_json_output($resArr);
+    drupal_exit();
+
+
+}
+
+function save_message() {
+
+    global $user;
+    $messageArr = json_decode($_POST['content'], true);
+
+    $timestamp = time();
+
+    db_insert('friends_chat_messages')
+        ->fields(array(
+            'sender' => $user->uid,
+            'receiver' => $messageArr['receiver'],
+            'created_timestamp' => time(),
+            'read_timestamp' => null,
+            'message' => trim($messageArr['message']),
+        ))
+        ->execute();
+
+}
+
+function set_read_timestamp() {
+    global $user;
+
+    $sender = $_POST['sender'];
+
+    $query = db_update('friends_chat_messages') // Table name no longer needs {}
+    ->fields(array(
+        'read_timestamp' => time(),
+    ));
+    $query->condition('sender', $sender, '=');
+    $query->condition('receiver', $user->uid, '=');
+    $query->execute();
+}
+
+function chat_poll() {
+    global $user;
+    $query = db_select('friends_chat_users', 'fcu');
+    $query->fields('fcu', array('user_id'));
+    $query->condition('fcu.user_id', $user->uid,'=');
+    $result = $query->execute();
+
+    if ($result->rowCount() == 0) {
+        db_insert('friends_chat_users')
+            ->fields(array(
+                'user_id' => $user->uid,
+                'timestamp' => time(),
+            ))
+            ->execute();
+    } else {
+        $query = db_update('friends_chat_users') // Table name no longer needs {}
+        ->fields(array(
+            'timestamp' => time(),
+        ));
+        $query->condition('user_id', $user->uid, '=');
+        $query->execute();
+    }
+
+    $messageArr = array();
+
+    $query = db_select('friends_chat_messages', 'fcm');
+    $query->join('users', 'us', 'fcm.sender = us.uid');
+    $query->fields('fcm', array('sender', 'created_timestamp', 'message'));
+    $query->fields('us', array('name'));
+    $query->condition('fcm.receiver', $user->uid,'=');
+    $query->isNull('fcm.read_timestamp');
+    $query->orderBy('fcm.created_timestamp', 'ASC');
+    $result = $query->execute();
+
+    if ($result->rowCount() == 0) {
+        $messageArr['status'] = 'nothing';
+    } else {
+        $messageArr['status'] = 'new';
+
+        $messageArr['messages'] = array();
+        foreach ($result as $data) {
+            array_push(
+                $messageArr['messages'],
+                array(
+                    'sender' => $data->sender,
+                    'name' => $data->name,
+                    'created_timestamp' => $data->created_timestamp,
+                    'message' => $data->message,
+                )
+            );
+
+            /*$query = db_update('friends_chat_messages') // Table name no longer needs {}
+            ->fields(array(
+                'first_seen' => 1,
+            ));
+            $query->condition('receiver', $user->uid, '=');
+            $query->condition('sender', $data->sender, '=');
+            $query->condition('created_timestamp', $data->created_timestamp, '=');
+            $query->execute();*/
+        }
+    }
+
+    drupal_json_output($messageArr);
+    drupal_exit();
+
+
+}
+
+
+function get_friends_list() {
+    global $user;
+
+    $resArray = array();
+
+    $query = db_select('user_relationships', 'ur');
+    $query->join('users', 'us', 'ur.requester_id = us.uid');
+    $query->join('friends_chat_users', 'fcs', 'ur.requester_id = fcs.user_id');
+    $query->fields('ur', array('requester_id'));
+    $query->fields('us', array('name'));
+    $query->fields('fcs', array('timestamp'));
+    $query->condition('ur.requestee_id', $user->uid,'=');
+    $query->condition('ur.approved', 1,'=');
+    $query->orderBy('name', 'DESC');
+    $result = $query->execute();
+
+    if ($result->rowCount() == 0) {
+        $resArray['status'] = 'error';
+        $resArray['message'] = t('Keine Freunde bisher hinzugefügt.');
+    } else {
+        $resArray['status'] = 'success';
+
+        foreach ($result as $data) {
+            $status = 'offline';
+
+            if ($data->timestamp >= (time() - 10)) {
+                $status = 'online';
+            }
+            $resArray['users'][$data->requester_id] = array(
+                'name' => $data->name,
+                'status' => $status,
+            );
+        }
+    }
+
+    drupal_json_output($resArray);
+    drupal_exit();
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function friends_chat_page_alter(&$page)
+{
+
+    global $user;
+    if ($user->uid) {
+        $page['page_bottom']['friends_chat']= array(
+            '#type' => 'markup',
+            '#markup' => '<div style="clear:both;">' . theme('friends_list') . '</div>',
+        );
+
+        drupal_add_js(drupal_get_path('module', 'friends_chat') . '/js/friends_chat.js');
+        drupal_add_css(drupal_get_path('module', 'friends_chat') . '/css/friends_chat.css');
+    }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function friends_chat_theme($existing, $type, $theme, $path)
+{
+    return array(
+        'friends_list' => array(
+            'template' => 'friends_list',
+        ),
+    );
+}
+
+function friends_chat_dbschema()
+{
+    $schema = array();
+
+    $schema['friends_chat_users'] = array(
+        'description' => 'The table for friends_chat_users',
+        'fields' => array(
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'timestamp' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+        )
+    );
+    $schema['friends_chat_open'] = array(
+        'description' => 'The table for friends_chat_open',
+        'fields' => array(
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'open_chat_ids' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'open_chat_window_ids' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+        )
+    );
+
+    $schema['friends_chat_messages_polled'] = array(
+        'description' => 'The table for friends_chat_messages_polled',
+        'fields' => array(
+            'user_id' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'messages_polled' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+        )
+    );
+
+
+    $schema['friends_chat_messages'] = array(
+        'description' => 'The table for friends_chat_messages',
+        'fields' => array(
+            'sender' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'receiver' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0
+            ),
+            'created_timestamp' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'read_timestamp' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => ''
+            ),
+            'message' => array(
+                'type' => 'text',
+                'size' => 'medium',
+            ),
+        )
+    );
+
+    return $schema;
+}
+

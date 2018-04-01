@@ -1,0 +1,189 @@
+#friends-chat {
+    color: #000000;
+}
+
+.friends-list {
+    position: fixed;
+    bottom: 0;
+    width: 210px;
+    right: 10px;
+    z-index: 9999;
+    //border: 1px solid #b5b5b5
+}
+
+.friends-chatbox {
+    position: fixed;
+    bottom: 0;
+    width: 240px;
+    //right: 230px;
+    z-index: 9999;
+    //border: 1px solid #b5b5b5;
+}
+
+.friends-list .list-head, .friends-chatbox .chatbox-head {
+    background-color: #e5e5e5;
+    border: 1px solid #b5b5b5;
+    border-bottom: none;
+    cursor: pointer;
+    position: absolute;
+    bottom: 0;
+    font-weight: bold;
+    width: 100%;
+    height: 33px;
+}
+
+.friends-chatbox .chatbox-head.blink {
+    background-color: #2F5BB7;
+}
+
+
+.friends-list .list-head > div, .friends-chatbox .chatbox-head > div {
+    padding: 6px 18px 6px 8px;
+}
+
+.friends-list .list-main, .friends-chatbox .chatbox-main {
+    background-color: #FFFFFF;
+    position: absolute;
+    bottom: 33px;
+    border: 1px solid #b5b5b5;
+    border-bottom: none;
+    width: 100%;
+}
+
+.friends-list .list-main .list-content {
+    //display: none;
+    max-height: 200px;
+    overflow-y: auto;
+    min-height: 200px;
+}
+
+.chatbox-main .chatbox-title, .list-main .list-title {
+    background-color: #222;
+    font-weight: bold;
+    color: #FFFFFF;
+    cursor: pointer;
+    padding: 3px 4px 3px 8px;
+    font-size: 13px;
+    height: auto;
+}
+
+.chatbox-main .chatbox-title span {
+    font-size: 16px;
+    font-weight: bold;
+    float: right;
+    line-height: 0.6em;
+    padding: 5px 4px 0 4px;
+}
+
+.chatbox-main .chatbox-title .status {
+    background: none;
+    height: 9px;
+    width: 9px;
+    float: left;
+    padding: 0;
+}
+
+.chatbox-main .chatbox-title .status.online {
+    float: left;
+    background: url(../images/online.png) no-repeat 100% center;
+    padding: 0;
+    height: 9px;
+    width: 9px;
+    margin-top: 6px;
+    margin-right: 6px;
+}
+
+.chatbox-main .chatbox-title .status.offline {
+    float: left;
+    background: url(../images/offline.png) no-repeat 100% center;
+    padding: 0;
+    height: 9px;
+    width: 9px;
+    margin-top: 6px;
+    margin-right: 6px;
+}
+
+.list-main .friend {
+    height: 30px;
+    cursor: pointer;
+}
+
+.list-main .friend:hover {
+    background-color: #e5e5e5;
+}
+
+.list-main .friend .name {
+    padding-left: 5px;
+    padding-right: 5px;
+    border-bottom: 1px solid #b5b5b5;
+    height: 30px;
+    line-height: 30px;
+
+}
+
+.list-main .friend .name a {
+    color: #000000;
+}
+
+.list-main .friend .status.online {
+    padding: 0;
+    float: right;
+    background: url(../images/online.png) no-repeat 100% center;
+    height: 9px;
+    width: 9px;
+    margin-top: 9px;
+    margin-right: 6px;
+}
+
+.list-main .friend .status.offline {
+    padding: 0;
+    float: right;
+    background: url(../images/offline.png) no-repeat 100% center;
+    height: 9px;
+    width: 9px;
+    margin-top: 9px;
+    margin-right: 6px;
+}
+
+.chatbox-main .chatbox-content {
+    height: 200px;
+    padding: 5px;
+    overflow: auto;
+    border-bottom: 1px solid #b5b5b5;;
+}
+
+.chatbox-main .chatbox-input {
+    padding: 5px;
+}
+
+.chatbox-main .chatbox-input .editor {
+    border: 1px solid #b5b5b5;
+    height: 50px;
+    resize: none;
+    width: 100%;
+    overflow: auto;
+}
+
+.chatbox-main .message-me {
+    margin-left: 20px;
+    margin-bottom: 10px;
+    background-color: #a1f191;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.chatbox-main .message-friend {
+    margin-right: 20px;
+    margin-bottom: 10px;
+    background-color: #d7d7d7;
+
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.chatbox-main .time {
+    color: #6d6d6d;
+    font-size: 10px;
+    display: block;
+
+}

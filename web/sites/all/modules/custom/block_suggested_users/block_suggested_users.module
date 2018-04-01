@@ -7,6 +7,7 @@ function block_suggested_users_menu()
 {
     $items = array();
 
+    //Link wird aufgerufen, wenn weitere Seiten von vorgeschlagenen Benutzern geladen werden sollen
     $items['dashboard/get/suggested-users'] = array(
         'page callback' => 'get_next_suggested_users',
         'type' => MENU_CALLBACK,
@@ -21,6 +22,7 @@ function block_suggested_users_menu()
  */
 function block_suggested_users_block_info()
 {
+    //Block für vorgeschlagene Benutzer definieren
     $blocks['block_suggested_users'] = array(
         'info' => t('Benutzer mit gleichen Interessen'),
     );
@@ -37,6 +39,7 @@ function block_suggested_users_block_view($delta = '')
 
     switch ($delta) {
         case 'block_suggested_users':
+            //Genauere Informationen, wie Inhalt, CSS und JS Dateien definieren
             $block['subject'] = t('Benutzer mit gleichen Interessen');
 
             global $user;
@@ -61,6 +64,7 @@ function block_suggested_users_block_view($delta = '')
     return $block;
 }
 
+//Funktion wird per AJAX aufgerufen, um weitere Seiten der vorgeschlagenen Benutzer zu laden
 function get_next_suggested_users() {
     global $user;
     drupal_json_output(getSuggestedUsersList($user->uid));
@@ -78,17 +82,26 @@ function getSuggestedUsersList($user_id) {
     //Pfad des Moduls holen, damit die CSS und JS Dateien richtig eingebunden werden können
     $path = drupal_get_path('module', 'block_suggested_users');
 
+    //subQuery wird im eigentlichen Query dursucht. subQuery lädt alle Interessen des Benutzers. Im eigentlichen Query wird geguckt,
+    //ob die Interessen der anderen Benutzer mit den Interessen des Benutzers übereinstimmen
     $subQuery = db_select('field_data_' . $userInterestsField, 'u2');
     $subQuery->fields('u2', array($userInterestsField . '_tid'));
     $subQuery->condition('u2.entity_id', $user_id, '=');
 
+    //subQuery2 lädt alle Freunde des Benutzers. Im eigentlichen Query wird dann überprüft, dass die Benutzer nicht Freunde des
+    //Benutzers sind, denn diese sollen nicht mehr Benutzer mit gleichen Interessen vorgeschlagen werden
     $subQuery2 = db_select('user_relationships', 'ur');
     $subQuery2->fields('ur', array('requestee_id'));
     $subQuery2->condition('ur.requester_id', $user_id, '=');
 
     $query = db_select('field_data_' . $userInterestsField, 'fd')->extend('PagerDefault');
     $query->distinct();
+    //join mit users, um den Namen zu bekommen
     $query->join('users', 'us', 'fd.entity_id = us.uid');
+    //join mit privacy_profile_fields_other settings, um herauszufinden, ob der Benutzer in seinem Profil angewählt hat, dass er
+    //anderen Benutzern vorgeschlagen werden soll. leftJoin weil Benutzer standardmäßig angezeigt werden sollen, wenn diese bisher noch
+    //keine Datenschutzeinstellungen gespeichert haben. In der Tabelle sind nämlich keine Einträge zu den Benutzern vorhanden, wenn diese
+    //ihre Datenschutzeinstellungen noch überhaupt nicht gespeichert haben.
     $query->leftJoin('privacy_profile_fields_other_settings', 'ppf', 'fd.entity_id = ppf.user_id');
     $query->fields('fd', array('entity_id'));
     $query->fields('us', array('name'));
@@ -96,11 +109,12 @@ function getSuggestedUsersList($user_id) {
     $query->condition('fd.entity_id', $subQuery2,'NOT IN');
     $query->condition('fd.entity_id', $user_id,'!=');
 
-
+    //Die Benutzer rausfiltern, die nicht anderen Bentuzern vorgeschlagen werden wollen
     $conGroup1 = db_and()
         ->condition('ppf.field_name', 'privacy_allow_suggestions', '=')
         ->condition('ppf.privacy', '0', '!=');
 
+    //Die Benutzer, die noch gar nicht ihre Datenschutzeinstellungen gespeichert haben auslesen, da diese standardmäßig angezeigt werden sollen
     $conGroup2 = db_and()
         ->isNull('ppf.field_name')
         ->isNull('ppf.privacy');
@@ -119,6 +133,7 @@ function getSuggestedUsersList($user_id) {
         foreach ($result as $data) {
             $loadUser = user_load($data->entity_id);
 
+            //Benutzerbild laden oder alternativ ein Platzhalter-Bild, wenn kein Bentuzerbild existiert
             $pictureLink = '';
             if (is_object($loadUser->picture)) {
                 $pictureLink = file_create_url($loadUser->picture->uri);
@@ -137,6 +152,7 @@ function getSuggestedUsersList($user_id) {
 
     }
 
+    //Dem HTML Code noch die Navigation zu anderen Seiten hinzufügen
     $suggestedUsersListHtml .= $paging;
     return $suggestedUsersListHtml;
 }

@@ -22,7 +22,7 @@ function alumni_field_projects_list_field_info()
  */
 function alumni_field_projects_list_field_is_empty($item, $field)
 {
-
+    //Überprüfen, ob in beiden Feldern etwas drin steht. Leere Felder sollen nicht in der DB gespeichert werden
     return empty($item['alumni_field_filtered_list']) && empty($item['alumni_field_autocomplete_list']);
 }
 
@@ -32,9 +32,6 @@ function alumni_field_projects_list_field_is_empty($item, $field)
 function alumni_field_projects_list_field_formatter_info() {
 
     //Definieren, welche Formatter es für die Anzeige gibt
-
-    // array für Suche nach Auswahl
-
     return array(
         'alumni_field_projects_list_formatter' => array(
             'label' => t('Standard'),
@@ -80,7 +77,7 @@ function alumni_field_projects_list_field_formatter_view($entity_type, $entity, 
 
                 //Ausgabelink definieren
                 $element[$delta] = array(
-                    '#markup' => '<a href="' . base_path() . 'node/' . $nid . '">' . $title['title'] . '</a>',
+                    '#markup' => '<a href="' . base_path() . 'node/' . $nid . '">' . $title['title'] . 'kkkkkkk</a>',
                 );
             }
             break;
@@ -130,10 +127,14 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
             $value = '';
             $visible = '';
 
+            //Wenn bereits ein Projekt durch die Auswahlliste gespeichert wurde, Daten laden und in $value speichern
             if (!empty($items[$delta]['alumni_field_filtered_list'])) {
                 $value = $items[$delta]['alumni_field_filtered_list'];
             }
 
+            //Wenn bei gespeicherten Projekten die Daten aus der DB geladen werden, überprüfen, ob die Auswahlliste oder das Feld mit der
+            //Autovervollständigung beim Speichern aktiviert war. Wenn die Autovervollständigung gerade aktiv war, soll beim Laden der Daten
+            //die Auswahlliste ausgeblendet werden
             if (isset($items[$delta]['alumni_field_active_list']) && $items[$delta]['alumni_field_active_list'] == 'autocomplete-list') {
                 $visible = 'display: none;';
             }
@@ -221,6 +222,7 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                 '#suffix' => '</div>',
             );
 
+            //Link erzeugen, um zur Autovervollständigung zu wechseln
             $element['change_to_autocomplete_list'] = array(
                 '#markup' => '<a href="#" class="change-to-autocomplete-list">' . t('Zur alternativen Suche mit Autovervollständigung') . '</a><br>',
                 '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
@@ -230,6 +232,7 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
 
             $title = '';
 
+            //Wenn ein Projekt bereits gespeichert wurde und die Autovervollständigung aktiv war, den Titel des Projekts aus der DB laden
             if (!empty($items[$delta]['alumni_field_autocomplete_list'])) {
                 $query = db_select('node', 'n');
                 $query->fields('n', array('title'));
@@ -241,30 +244,37 @@ function alumni_field_projects_list_field_widget_form(&$form, &$form_state, $fie
                 }
             }
 
+            //Wenn die Auswahlliste beim Speichern des Projekts aktiv war, dann soll die Autovervollständigung nach dem Laden der Daten aus
+            // der DB nicht angezeigt werden
             $visible = '';
             if (!isset($items[$delta]['alumni_field_active_list']) || $items[$delta]['alumni_field_active_list'] == 'normal-select-list') {
                 $visible = 'display: none;';
             }
 
+            //Feld für die Autovervollständigung definieren
             $element['alumni_field_autocomplete_list'] = array(
                 '#type' => 'textfield',
                 '#title' => $element['#title'],
                 '#description' => $element['#description'],
                 '#default_value' => $title,
                 '#required' => $element['#required'],
+                //Der Pfad wird aufgerufen, sobald etwas in das Feld geschrieben wird. Dort werden dann passende Projekte rausgesucht und zurückgegeben
                 '#autocomplete_path' => 'visitedprojects/autocomplete/' . $field['settings']['content_type_select'],
                 '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
                 '#delta' => $delta,
                 '#prefix' => '<div class="autocomplete-list" style="' . $visible .'">',
             );
 
+            //Link erzeugen, mit dem zur Auswahlliste gewechselt werden kann
             $element['change_to_normal_select_list'] = array(
                 '#markup' => '<a href="#" class="change-to-normal-select-list">' . t('Zur Standard Suche mit Auswahlfeld') . '</a><br>',
                 '#weight' => isset($element['#weight']) ? $element['#weight'] : 0,
                 '#suffix' => '</div>',
             );
 
-
+            //Verstecktes Feld definieren, in dem gespeichert wird welche Ansicht gerade aktiv ist. Diese wird zusammen mit dem ausgewähltem Projekt
+            //in der DB gespeichert. Beim Laden der Seite soll bei bereits gespeicherten Projekten auch entweder die Auswahlliste oder die
+            //Autovervollständigung standardmäßig aktiv sein und das andere ausgeblendet.
             $element['alumni_field_active_list'] = array(
                 '#type' => 'hidden',
                 '#default_value' => isset($items[$delta]['alumni_field_active_list']) ? $items[$delta]['alumni_field_active_list'] : 'normal-select-list',
@@ -300,22 +310,31 @@ function select_area_callback($form, &$form_state){
  */
 function alumni_field_projects_list_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items)
 {
+    /*
+     * Vor dem Speichern überprüfen, welche Ansicht bei der Auswahl aktiv war. Wenn in der Auswahlliste bereits ein Projekt ausgewählt wurde,
+     * anschließend aber zur Autovervollständigung gewechselt, ein Projekt ausgewählt und gespeichert wurde, soll das in der Auswahlliste
+     * festgelegte Projekt nicht mit in der Datenbank gespeichert werden. Ebenso andersrum.
+     */
     foreach ($items as $delta => $item) {
+        //Wenn die Auswahlliste aktiv war, dann die Autovervollständigung leeren
         if ($item['alumni_field_active_list'] == 'normal-select-list'){
             $items[$delta]['alumni_field_autocomplete_list'] = '';
         }
 
+        //Wenn die Autovervollständigung aktiv war, die Auswahlliste leeren
         if ($item['alumni_field_active_list'] == 'autocomplete-list') {
             $items[$delta]['alumni_field_filtered_list'] = '';
             $items[$delta]['alumni_field_projects_area_select'] = '';
 
+            //In der Autovervollständigung stehen nur die Titel. In der DB soll aber die Node ID gespeichert werden, sodass
+            //diese erst aus der DB geladen werden muss.
             $query = db_select('node', 'n');
             $query->fields('n', array('nid'));
             $query->condition('n.title', $item['alumni_field_autocomplete_list'], '=');
             $result = $query->execute();
 
             if ($result = $result->fetchAssoc()) {
-                $items[$delta]['alumni_field_autocomplete_list'] = $result;
+                $items[$delta]['alumni_field_autocomplete_list'] = $result['nid'];
             }
         }
     }
@@ -336,21 +355,55 @@ function alumni_field_projects_list_field_validate($entity_type, $entity, $field
     //Alle ausgewählten Projekte, bzw. Items, iterieren
     foreach ($items as $delta => $item) {
 
-        if ($item['alumni_field_active_list'] == 'normal-select-list' && !empty($item['alumni_field_projects_area_select']) && !empty($item['alumni_field_filtered_list'])){
-            $item['alumni_field_project_nid'] = $item['alumni_field_filtered_list'];
+        //Überprüfen, ob das ausgewählte Projekt so in der DB existiert, ansonsten eine Fehlermeldung ausgeben
+        if (!empty($item['alumni_field_autocomplete_list'])) {
+
+            $query = db_select('node', 'n');
+            $query->fields('n', array('title'));
+            $query->condition('n.title', $item['alumni_field_autocomplete_list'], '=');
+            $query->range(0, 1);
+            $result = $query->execute();
+
+            if (!$result->fetchAssoc()) {
+                $errors[$field['field_name']][$langcode][$delta][] = array(
+                    'error' => 'alumni_project_invalid',
+                    'message' => t('Angegebenens Projekt ist ungültig. Falls das Projekt in der Liste nicht vorhanden ist, bitte ein Projekt vorschlagen.'),
+                );
+            }
         }
 
-        //Nur die Items betrachten, bei denen sowohl ein Fachbereich und ein Projekt ausgewählt wurde
-        if (!empty($item['alumni_field_projects_area_select']) && !empty($item['alumni_field_filtered_list'])) {
+        //Je nachdem welche Ansicht für die Auswahl des Projekts aktiv ist $nid mit der Node ID aus der aktiven Ansicht befüllen
+        $nid = 0;
+        if (!empty($item['alumni_field_projects_area_select']) && !empty($item['alumni_field_filtered_list']) && $item['alumni_field_active_list'] == 'normal-select-list') {
+            $nid = $item['alumni_field_filtered_list'];
+        }
+
+        if (!empty($item['alumni_field_autocomplete_list']) && $item['alumni_field_active_list'] == 'autocomplete-list') {
+            //In der Autovervollständigung stehen nur die Titel. In der DB soll aber die Node ID gespeichert werden, sodass
+            //diese erst aus der DB geladen werden muss.
+            $query = db_select('node', 'n');
+            $query->fields('n', array('nid'));
+            $query->condition('n.title', $item['alumni_field_autocomplete_list'], '=');
+            $result = $query->execute();
+
+            if ($result = $result->fetchAssoc()) {
+
+                $nid = $result['nid'];
+            }
+
+        }
+
+        //Wenn in $nid eine reale Node ID steht das Projekt in der Tabelle alumni_projects_access für die Mitgliederverwaltung in Projekten speichern
+        if ($nid != 0) {
 
             //Dem Array die Node IDs der Projekte hinzufügen. Wird für die Überprüfung benötigt, ob der Benutzer Projekte aus
             //seinem Profil entfernt hat und die Projektzugehörigkeit ebenfalls entfernt werden soll
-            $projectsArray[$item['alumni_field_filtered_list']] = $item['alumni_field_filtered_list'];
+            $projectsArray[$nid] = $nid;
 
             //In der Datenbank abfragen, ob der Benutzer bereits dem Projekt zugeordnet ist und wenn nicht den Benutzer hinzufügen
             $query = db_select('alumni_projects_access', 'apc');
             $query->fields('apc', array('user_id'));
-            $query->condition('apc.node_id', $item['alumni_field_filtered_list'], '=');
+            $query->condition('apc.node_id', $nid, '=');
             $query->condition('apc.user_id', $user->uid, '=');
 
             $result = $query->execute();
@@ -358,7 +411,7 @@ function alumni_field_projects_list_field_validate($entity_type, $entity, $field
             if (!$result->fetchAssoc()) {
                 db_insert('alumni_projects_access')
                     ->fields(array(
-                        'node_id' => $item['alumni_field_filtered_list'],
+                        'node_id' => $nid,
                         'user_id' => $user->uid,
                         'status' => 0,
                         'manager' => 0,
@@ -388,6 +441,19 @@ function alumni_field_projects_list_field_validate($entity_type, $entity, $field
     }
 
 
+}
+
+/**
+ * Implements hook_field_widget_error().
+ */
+function alumni_field_project_field_widget_error($element, $error, $form, &$form_state)
+{
+    //Wenn in der Validierungsfunktion ein Fehler erzeugt wird, dann soll dieser angezeigt werden
+    switch ($error['error']) {
+        case 'alumni_project_invalid':
+            form_error( $element, $error['message']);
+            break;
+    }
 }
 
 /**
@@ -503,8 +569,8 @@ function alumni_field_projects_list_menu() {
 
 }
 
-// Autosuchen Funktion
-
+//Funktion wird aufgerufen, wenn in der Autovervollständigung etwas eingegeben wird. Der Suchstring wird in einzelne Wörter aufgeteilt und die Funktion
+//gibt Ergebnisse zurück, in denen alle Wörter vorkommen. Dabei ist die Reihenfolge der Wörter nicht mehr relevant.
 function visited_projects_autocomplete($type, $string) {
 
     $stringArr = preg_split('/ /', $string);
@@ -531,15 +597,5 @@ function visited_projects_autocomplete($type, $string) {
 
     drupal_json_output($matches);
 }
-/**
-    * Implements hook_field_widget_error().
- */
-function alumni_field_project_field_widget_error($element, $error, $form, &$form_state)
-{
-    switch ($error['error']) {
-        case 'alumni_project_invalid':
-            form_error( $element, $error['message']);
-            break;
-    }
-}
+
 

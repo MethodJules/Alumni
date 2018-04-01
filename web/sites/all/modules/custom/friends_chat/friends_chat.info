@@ -1,0 +1,6 @@
+name = Chat with your friends
+core = 7.x
+package = Chat
+
+
+dependencies[] = user_relationships

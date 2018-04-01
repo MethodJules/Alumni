@@ -5,6 +5,8 @@
 
 jQuery(document).ready(function($) {
 
+    //Wenn eine andere Seite geladen werden soll, dann aus dem Link die Seitenzahl extrahieren, per AJAX eine Anfrage schicken und das Ergebnis
+    //mit dem bisherigen HTML Code überschreiben
     $(document).delegate('.block-block_job_offers ul.pager li a', 'click', function (e) {
         e.preventDefault();
 
