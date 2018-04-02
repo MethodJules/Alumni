@@ -77,7 +77,7 @@ function alumni_field_projects_list_field_formatter_view($entity_type, $entity, 
 
                 //Ausgabelink definieren
                 $element[$delta] = array(
-                    '#markup' => '<a href="' . base_path() . 'node/' . $nid . '">' . $title['title'] . 'kkkkkkk</a>',
+                    '#markup' => '<a href="' . base_path() . 'node/' . $nid . '">' . $title['title'] . '</a>',
                 );
             }
             break;

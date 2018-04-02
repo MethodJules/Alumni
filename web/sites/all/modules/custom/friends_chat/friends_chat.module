@@ -8,6 +8,7 @@ function friends_chat_menu()
 {
     $items = array();
 
+    //Überprüfen, ob die Tabellen bereits bestehen und ggf. anlegen
     $schema = friends_chat_dbschema();
     if(!db_table_exists('friends_chat_users')) {
         db_create_table('friends_chat_users', $schema['friends_chat_users']);
@@ -25,6 +26,7 @@ function friends_chat_menu()
         db_create_table('friends_chat_messages_polled', $schema['friends_chat_messages_polled']);
     }
 
+    //Links für Drupal definieren
     $items['friends-chat/chat-poll'] = array(
         'page callback' => 'chat_poll',
         'type' => MENU_CALLBACK,
@@ -76,12 +78,16 @@ function friends_chat_menu()
     return $items;
 }
 
+//Funktion liefert den Verlauf eines Chats zurück
 function get_chat_history() {
+
+    //Variablen definieren
     global $user;
     $sender = $_POST['sender'];
 
     $messageArr = array();
 
+    //Alle Nachrichten aus dem Chat eines Benutzers laden, in ein Array schreiben und als JSON zurückgeben
     $query = db_select('friends_chat_messages', 'fcm');
     $query->fields('fcm', array('sender', 'receiver', 'created_timestamp', 'read_timestamp', 'message'));
     $query->condition('fcm.sender', array($sender, $user->uid),'IN');
@@ -117,12 +123,19 @@ function get_chat_history() {
 
 }
 
+//Funktion aktualisiert die geöffneten Chats eines Benutzers. Anhand der Funktion können beim nächsten Laden der Seite
+//die zuletzt geöffneten Chats wieder geöffnet werden
 function update_open_chats() {
+
+    //Variablen definieren
     global $user;
 
     $openChatIDs = $_POST['openChatIDs'];
     $openChatWindowIDs = $_POST['openChatWindowIDs'];
 
+    //Überprüfen, ob in der Tabelle bereits ein Eintrag für den Benutzer angelegt ist. Falls nicht einen neuen Eintrag
+    //hinzufügen oder andernfalls den bestehenden Eintrag aktualisieren. Gespeichert werden die JSON der geöffneten Chats
+    //und der Chatfenster, die nicht minimiert sind.
     $query = db_select('friends_chat_open', 'fcs');
     $query->fields('fcs', array('user_id'));
     $query->condition('fcs.user_id', $user->uid,'=');
@@ -147,11 +160,19 @@ function update_open_chats() {
     }
 }
 
+//Die Funktion aktualisiert die bereits abgeholten Nachrichten eines Benutzers zu seinen Chats. Falls ein Benutzer Nachrichten
+//nicht liest, dann würden die beim nächsten poll wieder mit an den Client gesendet werden. Da diese Nachrichten aber bereits einmal
+//vom Benutzer abgeholt wurden (aber eben nicht gelesen) sollen diese auch nicht als neue Nachrichten angezeigt werden. Deshalb
+//wird gespeichert, welche Nachrichten bereits abgeholt wurden
 function update_messages_polled() {
+
+    //Variablen definieren
     global $user;
 
     $messagesPolled = $_POST['messagesPolled'];
 
+    //Überprüfen, ob in der Tabelle bereits ein Eintrag für den Benutzer angelegt ist. Falls nicht einen neuen Eintrag
+    //hinzufügen oder andernfalls den bestehenden Eintrag aktualisieren. Gespeichert wird das JSON der bereits abgeholten Nachrichten
     $query = db_select('friends_chat_messages_polled', 'fcmp');
     $query->fields('fcmp', array('user_id'));
     $query->condition('fcmp.user_id', $user->uid,'=');
@@ -174,8 +195,12 @@ function update_messages_polled() {
     }
 }
 
+//Funktion wird beim Aufruf der Webseite ausgeführt und gibt die geöffneten Chats, sowie die bereits abgeholten Nachrichten zurück
 function get_settings() {
+    //Variable definieren
     global $user;
+
+    //Geöffnete Chats aus der DB auslesen und dem Array hinzufügen
     $query = db_select('friends_chat_open', 'fcs');
     $query->fields('fcs', array('open_chat_ids', 'open_chat_window_ids'));
     $query->condition('fcs.user_id', $user->uid,'=');
@@ -188,6 +213,7 @@ function get_settings() {
         $resArr['openChatWindowIDs'] = $result['open_chat_window_ids'];
     }
 
+    //Bereits abgeholte Nachrichten aus der DB auslesen und dem Array hinzufügen
     $query = db_select('friends_chat_messages_polled', 'fcmp');
     $query->fields('fcmp', array('messages_polled'));
     $query->condition('fcmp.user_id', $user->uid,'=');
@@ -203,13 +229,14 @@ function get_settings() {
 
 }
 
+//Funktion wird beim Absenden einer Nachricht aufgerufen und speichert diese in der DB
 function save_message() {
 
+    //Variablen definieren
     global $user;
     $messageArr = json_decode($_POST['content'], true);
 
-    $timestamp = time();
-
+    //Nachricht der Datenbank hinzufügen
     db_insert('friends_chat_messages')
         ->fields(array(
             'sender' => $user->uid,
@@ -222,11 +249,14 @@ function save_message() {
 
 }
 
+//Diese Funktion wird aufgerufen, wenn ein Benutzer in das Chatfenster klickt und setzt die bisher nicht gelesenen Nachrichten auf gelesen
 function set_read_timestamp() {
+    //Variable definieren
     global $user;
 
     $sender = $_POST['sender'];
 
+    //Den Zeitstempel zu gelesen mit der aktuellen Uhrzeit aktualisieren
     $query = db_update('friends_chat_messages') // Table name no longer needs {}
     ->fields(array(
         'read_timestamp' => time(),
@@ -236,8 +266,16 @@ function set_read_timestamp() {
     $query->execute();
 }
 
+//Diese Funktion wird zyklisch aufgerufen und setzt den aktuellen Zeitstempel für den Benutzer. Damit wird für andere Benutzer
+//überprüft, ob dieser noch online ist. Weiterhin wird geschaut, ob es für den Benutzer neue Nachrichten gibt und liest diese aus der
+//DB aus und gibt sie zurück.
 function chat_poll() {
+
+    //Variable definieren
     global $user;
+
+    //Überprüfen, ob es für den Benutzer bereits einen Eintrag in der Tabelle gibt. Wenn nicht wird ein neuer Eintrag hinzugefügt
+    //oder der bereits bestehende Eintrag mit dem aktuellen Zeitstempel aktualisiert.
     $query = db_select('friends_chat_users', 'fcu');
     $query->fields('fcu', array('user_id'));
     $query->condition('fcu.user_id', $user->uid,'=');
@@ -251,7 +289,7 @@ function chat_poll() {
             ))
             ->execute();
     } else {
-        $query = db_update('friends_chat_users') // Table name no longer needs {}
+        $query = db_update('friends_chat_users')
         ->fields(array(
             'timestamp' => time(),
         ));
@@ -259,8 +297,10 @@ function chat_poll() {
         $query->execute();
     }
 
+    //Array für neue Nachrichten definieren
     $messageArr = array();
 
+    //Neue Nachrichten eines Benutzers auslesen. Bei neuen Nachrichten existiert noch kein read_timestamp
     $query = db_select('friends_chat_messages', 'fcm');
     $query->join('users', 'us', 'fcm.sender = us.uid');
     $query->fields('fcm', array('sender', 'created_timestamp', 'message'));
@@ -270,6 +310,7 @@ function chat_poll() {
     $query->orderBy('fcm.created_timestamp', 'ASC');
     $result = $query->execute();
 
+    //Wenn es neue Nachrichten gibt, diese in ein Array schieben und als JSON zurückgeben
     if ($result->rowCount() == 0) {
         $messageArr['status'] = 'nothing';
     } else {
@@ -286,15 +327,6 @@ function chat_poll() {
                     'message' => $data->message,
                 )
             );
-
-            /*$query = db_update('friends_chat_messages') // Table name no longer needs {}
-            ->fields(array(
-                'first_seen' => 1,
-            ));
-            $query->condition('receiver', $user->uid, '=');
-            $query->condition('sender', $data->sender, '=');
-            $query->condition('created_timestamp', $data->created_timestamp, '=');
-            $query->execute();*/
         }
     }
 
@@ -304,12 +336,15 @@ function chat_poll() {
 
 }
 
-
+//Diese Funktion wird zyklisch aufgerufen und gibt den Status der Freundesliste zurück, welche Personen online oder offline sind
 function get_friends_list() {
+
+    //Variablen definieren
     global $user;
 
     $resArray = array();
 
+    //Freunde eines Benutzers und deren aktueller Onlinestatus auslesen
     $query = db_select('user_relationships', 'ur');
     $query->join('users', 'us', 'ur.requester_id = us.uid');
     $query->join('friends_chat_users', 'fcs', 'ur.requester_id = fcs.user_id');
@@ -321,6 +356,7 @@ function get_friends_list() {
     $query->orderBy('name', 'DESC');
     $result = $query->execute();
 
+    //Wenn Freunde existieren, werden diese einem Array mit ihrem Status hinzugefügt und als JSON zurückgegeben
     if ($result->rowCount() == 0) {
         $resArray['status'] = 'error';
         $resArray['message'] = t('Keine Freunde bisher hinzugefügt.');
@@ -347,11 +383,15 @@ function get_friends_list() {
 /**
  * Implements hook_page_alter().
  */
+//Funktion ändert jede Seite in Drupal und fügt den HTML Code für den Chat hinzu
 function friends_chat_page_alter(&$page)
 {
 
     global $user;
+
+    //Nur wenn der Benutzer angemeldet ist, soll der Chat angezeigt werden
     if ($user->uid) {
+        //Bereich im Array definieren und mit der theme Funktion das Template auslesen
         $page['page_bottom']['friends_chat']= array(
             '#type' => 'markup',
             '#markup' => '<div style="clear:both;">' . theme('friends_list') . '</div>',
@@ -367,6 +407,7 @@ function friends_chat_page_alter(&$page)
  */
 function friends_chat_theme($existing, $type, $theme, $path)
 {
+    //Hier wird definiert, welches Template geladen werden muss, wenn in der theme Funktion friends_list aufgerufen wird
     return array(
         'friends_list' => array(
             'template' => 'friends_list',
@@ -374,6 +415,7 @@ function friends_chat_theme($existing, $type, $theme, $path)
     );
 }
 
+//Definiert das DB Schema für die benötigten Tabellen
 function friends_chat_dbschema()
 {
     $schema = array();
